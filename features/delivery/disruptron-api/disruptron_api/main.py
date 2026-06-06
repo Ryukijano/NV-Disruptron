@@ -26,6 +26,8 @@ def run() -> None:
         settings.backend_url,
         settings.backend_chat_path,
         settings.backend_timeout_s,
+        chat_mode=settings.chat_mode,
+        agent_id=settings.agent_id,
     )
     transcribe = build_transcribe_engine(settings)
     app = create_app(settings, store, delivery, chat, transcribe)

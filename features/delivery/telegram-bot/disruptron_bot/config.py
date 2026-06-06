@@ -48,7 +48,7 @@ class BotSettings:
 
         return cls(
             bot_token=token,
-            backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:18789").rstrip("/"),
+            backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:8010").rstrip("/"),
             backend_chat_path=os.getenv("DISRUPTRON_BACKEND_CHAT_PATH", "/v1/chat"),
             backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "300")),
             subscriptions_path=Path(

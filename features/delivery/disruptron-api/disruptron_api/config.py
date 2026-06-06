@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 REPO_ROOT = PACKAGE_ROOT.parents[2]
+VALID_CHAT_MODES = frozenset({"auto", "http", "agent"})
 DEFAULT_SUBSCRIPTIONS = PACKAGE_ROOT.parent / "telegram-bot" / "data" / "subscriptions.json"
 
 
@@ -27,6 +28,8 @@ class ApiSettings:
     backend_url: str
     backend_chat_path: str
     backend_timeout_s: float
+    chat_mode: str
+    agent_id: str
     stt_engine: str
     stt_url: str
     stt_model: str
@@ -49,6 +52,12 @@ class ApiSettings:
         if not token:
             raise ValueError("TELEGRAM_BOT_TOKEN is required for outbound delivery")
 
+        chat_mode = os.getenv("DISRUPTRON_CHAT_MODE", "auto").strip().lower()
+        if chat_mode not in VALID_CHAT_MODES:
+            raise ValueError(
+                f"DISRUPTRON_CHAT_MODE must be one of {sorted(VALID_CHAT_MODES)}"
+            )
+
         return cls(
             push_host=os.getenv("DISRUPTRON_PUSH_HOST", "127.0.0.1"),
             push_port=int(os.getenv("DISRUPTRON_PUSH_PORT", "8010")),
@@ -60,6 +69,8 @@ class ApiSettings:
             backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:18789").rstrip("/"),
             backend_chat_path=os.getenv("DISRUPTRON_BACKEND_CHAT_PATH", "/v1/chat"),
             backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "300")),
+            chat_mode=chat_mode,
+            agent_id=os.getenv("DISRUPTRON_AGENT_ID", "disruptron").strip(),
             stt_engine=os.getenv("DISRUPTRON_STT_ENGINE", "proxy").strip().lower(),
             stt_url=os.getenv(
                 "DISRUPTRON_STT_URL",

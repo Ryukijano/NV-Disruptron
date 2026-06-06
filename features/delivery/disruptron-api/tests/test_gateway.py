@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from disruptron_api.backend.chat import ChatProxy, WebChatRequest
 from disruptron_api.config import ApiSettings
 from disruptron_api.gateway import create_app
 from disruptron_api.subscriptions import SubscriptionStore
@@ -43,6 +45,8 @@ def settings(tmp_path: Path) -> ApiSettings:
         backend_url="http://127.0.0.1:18789",
         backend_chat_path="/v1/chat",
         backend_timeout_s=30.0,
+        chat_mode="auto",
+        agent_id="disruptron",
         stt_engine="off",
         stt_url="http://127.0.0.1:8000/v1/audio/transcriptions",
         stt_model="whisper-1",
@@ -106,3 +110,70 @@ def test_subscription_persistence(tmp_path: Path) -> None:
     assert SubscriptionStore(path).is_subscribed(7, "daily")
     raw = json.loads(path.read_text(encoding="utf-8"))
     assert raw["subscribers"][0]["chat_id"] == 700
+
+
+@pytest.mark.asyncio
+async def test_chat_auto_falls_back_to_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DISRUPTRON_CONTEXT_DB", str(tmp_path / "context.db"))
+    proxy = ChatProxy(
+        "http://127.0.0.1:18789",
+        "/v1/chat",
+        30.0,
+        chat_mode="auto",
+        agent_id="disruptron",
+    )
+
+    with patch.object(proxy, "_ask_http", AsyncMock(return_value=None)):
+        with patch.object(proxy._agent, "ask", AsyncMock(return_value="Agent reply")):
+            response = await proxy.ask(
+                WebChatRequest(text="Hello", session_id="web-test", user_id="web-user")
+            )
+
+    assert response.reply == "Agent reply"
+
+
+@pytest.mark.asyncio
+async def test_chat_telegram_payload_shape(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DISRUPTRON_CONTEXT_DB", str(tmp_path / "context.db"))
+    proxy = ChatProxy(
+        "http://127.0.0.1:8010",
+        "/v1/chat",
+        30.0,
+        chat_mode="agent",
+        agent_id="disruptron",
+    )
+
+    with patch.object(proxy._agent, "ask", AsyncMock(return_value="Tube status OK")) as agent_ask:
+        response = await proxy.ask(
+            WebChatRequest(
+                text="Status?",
+                channel="telegram",
+                chat_id="4200",
+                user_id="42",
+                username="alice",
+            )
+        )
+
+    assert response.reply == "Tube status OK"
+    agent_ask.assert_awaited_once()
+    turn = agent_ask.await_args.args[0]
+    assert turn.channel == "telegram"
+    assert turn.chat_id == "4200"
+
+
+@pytest.mark.asyncio
+async def test_chat_http_mode_skips_agent() -> None:
+    proxy = ChatProxy(
+        "http://127.0.0.1:18789",
+        "/v1/chat",
+        30.0,
+        chat_mode="http",
+        agent_id="disruptron",
+    )
+
+    with patch.object(proxy, "_ask_http", AsyncMock(return_value="HTTP reply")):
+        with patch.object(proxy._agent, "ask", AsyncMock()) as agent_ask:
+            response = await proxy.ask(WebChatRequest(text="Hi", session_id="web-1"))
+
+    assert response.reply == "HTTP reply"
+    agent_ask.assert_not_awaited()
