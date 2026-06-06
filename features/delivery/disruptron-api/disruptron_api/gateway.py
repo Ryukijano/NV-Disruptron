@@ -4,8 +4,10 @@ import logging
 from typing import Protocol
 
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from disruptron_api.backend.chat import ChatProxy, WebChatRequest, WebChatResponse
 from disruptron_api.config import ApiSettings
 from disruptron_api.subscriptions import SubscriptionStore
 
@@ -48,11 +50,20 @@ def create_app(
     settings: ApiSettings,
     store: SubscriptionStore,
     delivery: MessageDelivery,
+    chat: ChatProxy | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="NV Disruptron Outputs API",
-        description="Frontend-agnostic push gateway for alerts and daily plans.",
+        description="Frontend-agnostic gateway for web, Telegram, and push delivery.",
         version="0.2.0",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.get("/health")
@@ -115,5 +126,11 @@ def create_app(
         x_push_secret: str | None = Header(None, alias="X-Push-Secret"),
     ) -> PushResponse:
         return await push_alert(body, authorization, x_push_secret)
+
+    @app.post("/v1/chat", response_model=WebChatResponse)
+    async def web_chat(body: WebChatRequest) -> WebChatResponse:
+        if chat is None:
+            raise HTTPException(status_code=503, detail="Chat proxy not configured")
+        return await chat.ask(body)
 
     return app

@@ -32,6 +32,10 @@ def settings(tmp_path: Path) -> ApiSettings:
         push_secret="secret",
         telegram_bot_token="test-token",
         subscriptions_path=tmp_path / "subscriptions.json",
+        backend_url="http://127.0.0.1:18789",
+        backend_chat_path="/v1/chat",
+        backend_timeout_s=30.0,
+        cors_origins=("http://localhost:5173",),
     )
 
 

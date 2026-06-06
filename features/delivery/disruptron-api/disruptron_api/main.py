@@ -4,6 +4,7 @@ import logging
 
 import uvicorn
 
+from disruptron_api.backend.chat import ChatProxy
 from disruptron_api.config import ApiSettings
 from disruptron_api.delivery.telegram import TelegramDelivery
 from disruptron_api.gateway import create_app
@@ -20,7 +21,12 @@ def run() -> None:
     settings = ApiSettings.from_env()
     store = SubscriptionStore(settings.subscriptions_path)
     delivery = TelegramDelivery(settings.telegram_bot_token)
-    app = create_app(settings, store, delivery)
+    chat = ChatProxy(
+        settings.backend_url,
+        settings.backend_chat_path,
+        settings.backend_timeout_s,
+    )
+    app = create_app(settings, store, delivery, chat)
 
     logger.info(
         "NV Disruptron outputs API listening on %s:%s",

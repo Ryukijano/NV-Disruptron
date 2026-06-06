@@ -11,6 +11,12 @@ REPO_ROOT = PACKAGE_ROOT.parents[2]
 DEFAULT_SUBSCRIPTIONS = PACKAGE_ROOT.parent / "telegram-bot" / "data" / "subscriptions.json"
 
 
+def _parse_cors_origins(raw: str | None) -> list[str]:
+    if not raw or not raw.strip():
+        return ["http://localhost:5173", "http://127.0.0.1:5173"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
 @dataclass(frozen=True, slots=True)
 class ApiSettings:
     push_host: str
@@ -18,6 +24,10 @@ class ApiSettings:
     push_secret: str
     telegram_bot_token: str
     subscriptions_path: Path
+    backend_url: str
+    backend_chat_path: str
+    backend_timeout_s: float
+    cors_origins: tuple[str, ...]
 
     @classmethod
     def from_env(cls, env_path: Path | None = None) -> ApiSettings:
@@ -41,4 +51,8 @@ class ApiSettings:
             subscriptions_path=Path(
                 os.getenv("DISRUPTRON_SUBSCRIPTIONS_PATH", str(DEFAULT_SUBSCRIPTIONS))
             ),
+            backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:18789").rstrip("/"),
+            backend_chat_path=os.getenv("DISRUPTRON_BACKEND_CHAT_PATH", "/v1/chat"),
+            backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "300")),
+            cors_origins=tuple(_parse_cors_origins(os.getenv("DISRUPTRON_CORS_ORIGINS"))),
         )

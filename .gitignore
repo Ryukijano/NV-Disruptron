@@ -8,7 +8,11 @@ __pycache__/
 **/.env
 
 # Disruptron Telegram runtime state
-features/delivery/telegram/data/subscriptions.json
+features/delivery/telegram-bot/data/subscriptions.json
+
+# Web frontend
+features/delivery/web/node_modules/
+features/delivery/web/dist/
 
 # Large generated caches (keep source xlsx + csv)
 data/*.zip
