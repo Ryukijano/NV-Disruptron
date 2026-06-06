@@ -1,0 +1,1 @@
+1. Use the newly added calendar mcp. ~/google-calendar-mcp

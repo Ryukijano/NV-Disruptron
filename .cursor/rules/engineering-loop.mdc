@@ -1,0 +1,108 @@
+---
+description: Standard software engineering loop for NV-Disruptron (London mobility agent stack)
+globs:
+  - "**/*"
+---
+
+# Engineering loop — NV-Disruptron
+
+Use this workflow for **any** code change: MCP servers, OpenClaw agent, vLLM inference, delivery channels, observability, or documentation.
+
+## 1. Frame the change
+
+Identify the owning subsystem:
+
+| Subsystem | Path |
+|-----------|------|
+| Agent runtime (OpenClaw, skills, heartbeat) | `features/agent/workspace/` |
+| Agent MCP (slim ops tools) | `platform/mcp/ops/` |
+| Agent configure / daemon | `platform/scripts-lib/lib/configure.sh`, `daemon.sh` |
+| AI-Q research sidecar | `features/agent/research/` |
+| TfL live data MCP | `platform/mcp/transport/` |
+| Spatial / IMD MCP | `platform/mcp/spatial/` |
+| Impact scoring MCP | `platform/mcp/impact/` |
+| Push API + Telegram channels | `platform/delivery/` |
+| vLLM / Nemotron | `platform/scripts-lib/lib/vllm.sh` |
+| Validate + monitor + tests | `platform/scripts-lib/lib/observability.sh`, `test.sh` |
+| Shared Python + shell libs | `platform/shared/`, `platform/scripts-lib/` |
+| Docs + workflows | `docs/`, `.cursor/rules/` |
+
+Decide change type: **bug fix**, **feature**, **refactor**, **performance**, or **docs-only**.
+
+Prefer the smallest change that preserves `./scripts/disruptron` CLI contracts and MCP tool names unless a breaking change is explicitly requested.
+
+## 2. Inspect contracts first
+
+Before editing, read:
+
+- `Makefile` — `make setup`, `validate`, `test`
+- `scripts/disruptron` — CLI subcommands
+- `platform/scripts-lib/env.sh` — paths and env defaults
+- `docs/ENGINEERING.md` — this loop (long form)
+- `docs/STRUCTURE.md` — repo layout
+- Subsystem README closest to the change
+
+Agent changes also inspect:
+
+- `features/agent/workspace/AGENTS.md`, `HEARTBEAT.md`, `VOICE.md`, `USER.md`
+- `features/agent/scripts/disruptron configure`
+- `platform/mcp/ops/server.py`
+
+## 3. Implement in a narrow slice
+
+- Change the authoritative module first; avoid duplicating logic in `platform/shared/`.
+- Keep MCP tool names, skill folder names, and output JSON shapes stable.
+- Preserve defaults; add env flags before changing behavior.
+- Log at subsystem boundaries so failures localize quickly.
+
+## 4. Verify in layers
+
+```bash
+# Hygiene
+make setup          # if MCP deps changed
+
+# Fast gates (no LLM)
+./scripts/disruptron validate
+
+# Targeted tests
+make test
+./scripts/disruptron test all
+./scripts/disruptron test skills
+./scripts/disruptron test analysis
+./scripts/disruptron test transport
+```
+
+Runtime smoke (requires Docker + OpenClaw):
+
+```bash
+./scripts/disruptron vllm --recreate    # multimodal if needed
+./scripts/disruptron run --no-vllm      # interactive TUI
+./scripts/disruptron query "EV chargers near Greenford"
+./scripts/disruptron daemon             # 24/7 heartbeat (background)
+```
+
+## 5. Compare against the contract
+
+Check artifacts and responses:
+
+- MCP briefing JSON (`get_london_city_briefing`, EV snapshot fields)
+- `features/agent/workspace/analysis/` metrics + `CONTEXT.md`
+- OpenClaw agent id `disruptron`, MCP prefix `disruptron_ops__`
+- ElevenLabs TTS obeys `VOICE.md` (no PII in speech)
+- outputs-api `/health` and push fanout tests
+- Telegram pairing / channel bindings in `~/.openclaw/openclaw.json`
+
+Do not merge ambiguous output contracts.
+
+## 6. Escalate only when necessary
+
+- One MCP failing → test that server in isolation (`cd platform/mcp/transport && uv run python -c …`).
+- Cross-feature change → split commits or follow-up tasks.
+- Missing dependency → fallback-safe code path + document blocker in PR/commit message.
+
+## Companion docs
+
+- [docs/QUICKSTART.md](../docs/QUICKSTART.md) — first run
+- [docs/MCP.md](../docs/MCP.md) — tool reference
+- [features/agent/docs/CHANNELS.md](../features/agent/docs/CHANNELS.md) — Telegram
+- [features/agent/docs/DOCUMENTATION.md](../features/agent/docs/DOCUMENTATION.md) — full agent index

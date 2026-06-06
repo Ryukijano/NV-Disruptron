@@ -1,0 +1,4 @@
+.venv/
+data/subscriptions.json
+__pycache__/
+*.pyc

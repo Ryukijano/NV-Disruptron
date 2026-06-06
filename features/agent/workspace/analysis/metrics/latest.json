@@ -1,0 +1,16 @@
+{
+  "fetched_at": "2026-06-06T15-09-05Z",
+  "metrics": {
+    "tube_lines_bad": 4,
+    "tube_disruptions": 4,
+    "congested_corridors": 6,
+    "road_disruptions": 80,
+    "street_segments": 99,
+    "street_closures": 10,
+    "ev_available_ratio": 0.705,
+    "ev_out_of_service": 24,
+    "equity_lines_scored": 3,
+    "top_vulnerable_wards": [],
+    "stress_score": 100
+  }
+}

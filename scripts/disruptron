@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# NV-Disruptron — single CLI for the whole stack.
+# Usage: ./scripts/disruptron <command> [options]
+set -euo pipefail
+
+_DISRUPTRON_CLI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_DISRUPTRON_LIB="$_DISRUPTRON_CLI/../platform/scripts-lib"
+
+# shellcheck source=../platform/scripts-lib/env.sh
+source "$_DISRUPTRON_LIB/env.sh"
+# shellcheck source=../platform/scripts-lib/lib/vllm.sh
+source "$_DISRUPTRON_LIB/lib/vllm.sh"
+# shellcheck source=../platform/scripts-lib/lib/research.sh
+source "$_DISRUPTRON_LIB/lib/research.sh"
+# shellcheck source=../platform/scripts-lib/lib/configure.sh
+source "$_DISRUPTRON_LIB/lib/configure.sh"
+# shellcheck source=../platform/scripts-lib/lib/observability.sh
+source "$_DISRUPTRON_LIB/lib/observability.sh"
+# shellcheck source=../platform/scripts-lib/lib/test.sh
+source "$_DISRUPTRON_LIB/lib/test.sh"
+# shellcheck source=../platform/scripts-lib/lib/elevenlabs.sh
+source "$_DISRUPTRON_LIB/lib/elevenlabs.sh"
+# shellcheck source=../platform/scripts-lib/lib/setup.sh
+source "$_DISRUPTRON_LIB/lib/setup.sh"
+# shellcheck source=../platform/scripts-lib/lib/agent.sh
+source "$_DISRUPTRON_LIB/lib/agent.sh"
+# shellcheck source=../platform/scripts-lib/lib/daemon.sh
+source "$_DISRUPTRON_LIB/lib/daemon.sh"
+# shellcheck source=../platform/scripts-lib/lib/context.sh
+source "$_DISRUPTRON_LIB/lib/context.sh"
+# shellcheck source=../platform/scripts-lib/lib/nemoclaw.sh
+source "$_DISRUPTRON_LIB/lib/nemoclaw.sh"
+
+disruptron_help() {
+  cat <<EOF
+NV-Disruptron — autonomous London transport & EV intelligence
+
+Usage: disruptron <command> [options]
+
+Agent:
+  daemon              24/7 monitor — vLLM + gateway + heartbeat + voice alerts
+  run [opts]          Interactive TUI (--channels for Telegram)
+  query <text>        One-shot query
+  configure [--channels]   Register MCP + OpenClaw agent + TTS
+  nemoclaw onboard|profile|policy-setup|url|status   NVIDIA NemoClaw + Nemotron Omni
+
+Infrastructure:
+  vllm [--recreate] [--llama]   Start Nemotron on :8000
+  monitor [--watch] [--json]    Health dashboard
+  validate                      Full smoke test (no LLM)
+  test [all|skills|analysis|transport|agent]
+  setup                         Sync MCPs + ward data
+  context sync|recall|session-id   SQLite chat memory (browser/Telegram)
+  elevenlabs                    Configure ElevenLabs voice
+  install                       Install systemd user service
+
+Examples:
+  disruptron daemon
+  disruptron run
+  disruptron query "EV chargers near Greenford"
+  disruptron test all
+  disruptron configure --channels
+
+Set in .env: ELEVENLABS_API_KEY, TELEGRAM_BOT_TOKEN (optional)
+Edit features/agent/workspace/USER.md for your mobility profile.
+EOF
+}
+
+main() {
+  local cmd="${1:-help}"
+  [[ "$cmd" == "-h" || "$cmd" == "--help" ]] && cmd=help
+  shift || true
+
+  case "$cmd" in
+    help) disruptron_help ;;
+    daemon) disruptron_cmd_daemon "$@" ;;
+    run) disruptron_cmd_run "$@" ;;
+    query) disruptron_cmd_query "$@" ;;
+    configure) disruptron_cmd_configure "$@" ;;
+    vllm) disruptron_cmd_vllm "$@" ;;
+    monitor) disruptron_cmd_monitor "$@" ;;
+    validate) disruptron_cmd_validate "$@" ;;
+    test) disruptron_cmd_test "$@" ;;
+    setup) disruptron_cmd_setup "$@" ;;
+    context) disruptron_cmd_context "$@" ;;
+    nemoclaw) disruptron_cmd_nemoclaw "$@" ;;
+    elevenlabs) disruptron_cmd_elevenlabs "$@" ;;
+    install) disruptron_cmd_install "$@" ;;
+    *)
+      echo "Unknown command: $cmd — run: disruptron help" >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

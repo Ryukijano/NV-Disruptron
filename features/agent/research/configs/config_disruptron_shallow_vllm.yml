@@ -1,0 +1,99 @@
+# NV-Disruptron — minimal shallow research (non-interactive nat run)
+# Example: features/agent/research/docs/examples/minimal-shallow-london.md
+# Run:     ./scripts/disruptron query "your question"
+
+general:
+  telemetry:
+    logging:
+      console:
+        _type: console
+        level: INFO
+
+# ---------------------------------------------------------------------------
+# LLMs — single model sufficient for shallow research
+# ---------------------------------------------------------------------------
+llms:
+  nemotron_vllm:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    max_tokens: 2048
+    num_retries: 3
+
+# ---------------------------------------------------------------------------
+# Tools — London MCP only (no calendar, no web search)
+# ---------------------------------------------------------------------------
+function_groups:
+  tfl_london:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT:-/home/nvidia/NV-Disruptron-Gyana}/platform/mcp/transport"
+        - "run"
+        - "python"
+        - "server.py"
+  london_spatial:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT:-/home/nvidia/NV-Disruptron-Gyana}/platform/mcp/spatial"
+        - "run"
+        - "python"
+        - "server.py"
+  london_impact:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT:-/home/nvidia/NV-Disruptron-Gyana}/platform/mcp/impact"
+        - "run"
+        - "python"
+        - "server.py"
+
+functions:
+  data_sources:
+    _type: data_source_registry
+    sources:
+      - id: tfl_london
+        name: "TfL Live Transport"
+        tools: [tfl_london]
+      - id: london_spatial
+        name: "London Spatial & Deprivation"
+        tools: [london_spatial]
+      - id: london_impact
+        name: "Disruption Impact Scoring"
+        tools: [london_impact]
+
+  shallow_research_agent:
+    _type: shallow_research_agent
+    llm: nemotron_vllm
+    max_llm_turns: 12
+    max_tool_iterations: 6
+    exclude_tools:
+      - tfl_london__plan_journey
+      - tfl_london__get_mode_arrivals
+      - tfl_london__get_bike_points
+      - tfl_london__get_stop_crowding
+      - tfl_london__get_stop_arrivals
+      - tfl_london__search_stop_points
+      - tfl_london__list_line_modes
+      - tfl_london__get_lines_by_mode
+      - tfl_london__get_tfl_api_status
+      - tfl_london__get_road_disruption_categories
+      - tfl_london__get_road_disruption_severities
+      - tfl_london__list_tfl_roads
+
+# ---------------------------------------------------------------------------
+# Workflow — shallow only (bypasses intent classifier)
+# ---------------------------------------------------------------------------
+workflow:
+  _type: shallow_research_workflow
