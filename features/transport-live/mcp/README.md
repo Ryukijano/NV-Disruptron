@@ -1,22 +1,36 @@
 # TfL London MCP Server
 
-MCP server that gives AI agents (Grok, Claude, Cursor, etc.) secure, structured access to the **Transport for London (TfL) Unified API**, starting with line disruptions.
-
-**Primary focus (as requested):**
-- `GET /Line/Mode/{modes}/Disruption` → `get_line_disruptions_by_mode`
-- Also includes the per-line version for "a particular line": `GET /Line/{ids}/Disruption`
+MCP server that gives AI agents secure, structured access to the **Transport for London (TfL) Unified API** — public transport **and** live road traffic.
 
 ---
 
 ## Features (Current)
 
-- `get_line_disruptions_by_mode(modes)` — Exact match to the API operation you linked
-- `get_line_disruptions(line_ids)` — Best for specific lines (victoria, jubilee, northern, etc.)
-- `get_lines_by_mode(modes)` — Discover line IDs
-- `list_line_modes()` — See available modes
-- `get_tfl_api_status()` — Check if your key is loaded
+### Public transport
+- `get_line_disruptions_by_mode(modes)` — `GET /Line/Mode/{modes}/Disruption`
+- `get_line_disruptions(line_ids)` — `GET /Line/{ids}/Disruption`
+- `get_line_status(line_ids)` / `get_line_status_by_mode(modes)`
+- `get_lines_by_mode(modes)`, `list_line_modes()`
+- `search_stops(query)`, `get_stop_arrivals(stop_id)`
+- `plan_journey(from, to)`, `get_bike_points(lat, lon, radius)`
+- `get_mode_arrivals(mode)` — live arrivals across a whole mode
+- `get_stop_crowding(stop_id, line_id)`
 
-All tools return clean JSON from the official TfL API.
+### Road traffic & street works
+- `get_london_traffic_snapshot()` — one-call Tube + road + street overview
+- `get_all_road_status(congested_only)` — `GET /Road/all/Status` (all 24 corridors)
+- `get_street_disruptions()` — `GET /Road/all/Street/Disruption` (requires date range; auto-today)
+- `get_all_road_disruptions()` — `GET /Road/all/Disruption` (incidents/works by corridor)
+- `get_road_status(road_ids)` — `GET /Road/{ids}/Status` (specific corridor congestion)
+- `get_road_disruptions(road_ids)` — works/closures on specific A-roads
+- `get_road_disruption_categories()` / `get_road_disruption_severities()` — TfL metadata
+- `list_tfl_roads()` — discover road corridor IDs (a1, a406, inner ring, …)
+
+### Environment
+- `get_air_quality()` — current London air quality forecast
+- `get_tfl_api_status()` — check if your key is loaded
+
+All tools return clean JSON from the official TfL API. **No API key required** for demo (anonymous ~50 req/min).
 
 ---
 
@@ -95,19 +109,24 @@ You can also run it with `mcp run` if you prefer.
 
 ## Example Tool Calls (what agents will see)
 
-**Get disruptions for the entire Tube network:**
+**Live road traffic snapshot (start here):**
+```
+get_london_traffic_snapshot()
+get_all_road_status(congested_only=true)
+get_street_disruptions(closed_only=true, limit=10)
+get_all_road_disruptions(limit=10, category="Works")
+get_road_status(road_ids="a1,a406,inner ring")
+```
+
+**Tube disruptions:**
 ```
 get_line_disruptions_by_mode(modes="tube")
-```
-
-**Get disruptions for specific lines only:**
-```
 get_line_disruptions(line_ids="jubilee")
-get_line_disruptions(line_ids="northern,central,piccadilly")
 ```
 
-**Discover what lines exist:**
+**Discover IDs:**
 ```
+list_tfl_roads()
 get_lines_by_mode(modes="tube")
 list_line_modes()
 ```
@@ -127,17 +146,23 @@ Typical disruption fields:
 
 ---
 
-## Development & Extension
+## TfL API reference (verified live)
 
-The server is intentionally small and easy to extend.
+| Endpoint | Tool |
+|----------|------|
+| `GET /Road/all/Status` | `get_all_road_status` |
+| `GET /Road/all/Street/Disruption?startDate=&endDate=` | `get_street_disruptions` |
+| `GET /Road/all/Disruption` | `get_all_road_disruptions` |
+| `GET /Road/{ids}/Status` | `get_road_status` |
+| `GET /Road/{ids}/Disruption` | `get_road_disruptions` |
+| `GET /Road/Meta/Categories` | `get_road_disruption_categories` |
+| `GET /Road/Meta/Severities` | `get_road_disruption_severities` |
+| `GET /Road` | `list_tfl_roads` |
+| `GET /AirQuality` | `get_air_quality` |
+| `GET /Mode/{mode}/Arrivals` | `get_mode_arrivals` |
+| `GET /StopPoint/{id}/Crowding/{line}` | `get_stop_crowding` |
 
-Want to add more TfL endpoints later?
-- Status by mode: `/Line/Mode/{modes}/Status`
-- StopPoint arrivals
-- Journey planning
-- etc.
-
-Just add new `@mcp.tool()` functions that call `_tfl_get(...)`.
+Note: `GET /Road/all/Street/Disruption` **requires** `startDate` and `endDate` query params (404 without them). The MCP tool defaults to today UTC.
 
 ---
 

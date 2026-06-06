@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-06T12:04:05Z",
+  "vllm": {
+    "status": "ok",
+    "url": "http://127.0.0.1:8000/v1",
+    "model": "nemotron_3_nano_omni"
+  },
+  "docker": "not running",
+  "tfl_api": "ok",
+  "postcodes_io": "ok",
+  "data": {
+    "status": "ok",
+    "ward_count": 633
+  },
+  "prompts": "ok",
+  "aiq_venv": "ok",
+  "briefing_preview": "Tube: 3 lines not on good service; 2 active disruption(s). Roads: 6 congested corridors; 80 active road disruptions. Streets: 99 disrupted segments; 10 closed or restricted. Most vulnerable wards on affected lines: Distr"
+}

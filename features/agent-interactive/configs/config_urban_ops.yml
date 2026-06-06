@@ -1,0 +1,136 @@
+# LifeLine Grid — AI-Q with local vLLM (Nemotron Omni) + London MCP tools
+# No cloud API keys required.
+# Start: ./scripts/start_vllm_backend.sh
+# Run:   cd /home/nvidia/aiq && ./scripts/start_cli.sh --config_file /home/nvidia/NV-Disruptron/configs/config_urban_ops.yml
+
+general:
+  telemetry:
+    logging:
+      console:
+        _type: console
+        level: INFO
+
+llms:
+  nemotron_vllm_intent:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.4
+    top_p: 0.9
+    max_tokens: 4096
+    num_retries: 3
+
+  nemotron_vllm:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.3
+    top_p: 0.9
+    max_tokens: 8192
+    num_retries: 3
+
+function_groups:
+  tfl_london:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "/home/nvidia/NV-Disruptron/tfl-mcp-server"
+        - "run"
+        - "python"
+        - "server.py"
+
+  google_calendar:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "npx"
+      args:
+        - "@cocal/google-calendar-mcp"
+      env:
+        GOOGLE_OAUTH_CREDENTIALS: "/home/nvidia/NV-Disruptron/google-calendar-mcp/gcp-oauth.keys.json"
+        # Optional: fine-tune which tools are exposed
+        # ENABLED_TOOLS: "list-events,create-event,get-free-busy,find-time-slots"
+
+  london_spatial:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "/home/nvidia/NV-Disruptron/london-spatial-mcp"
+        - "run"
+        - "python"
+        - "server.py"
+
+  london_impact:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "/home/nvidia/NV-Disruptron/london-impact-mcp"
+        - "run"
+        - "python"
+        - "server.py"
+
+functions:
+  data_sources:
+    _type: data_source_registry
+    sources:
+      - id: tfl_london
+        name: "TfL Live Transport"
+        description: "Real-time Tube, Elizabeth line, DLR, bus disruptions, status, journeys, and Santander Cycles."
+        tools:
+          - tfl_london
+      - id: london_spatial
+        name: "London Spatial & Deprivation"
+        description: "London ward lookup, IMD 2019 deprivation profiles, population, and borough GVA reference data."
+        tools:
+          - london_spatial
+      - id: london_impact
+        name: "Disruption Impact Scoring"
+        description: "Score transport disruption equity and economic exposure by ward using TfL + IMD weighting."
+        tools:
+          - london_impact
+      - id: google_calendar
+        name: "Google Calendar"
+        description: "Read user's scheduled events, meetings, availability, free/busy slots, and create/modify events. Critical for correlating transport disruptions with daily plans."
+        tools:
+          - google_calendar
+
+  intent_classifier:
+    _type: intent_classifier
+    llm: nemotron_vllm_intent
+
+  clarifier_agent:
+    _type: clarifier_agent
+    llm: nemotron_vllm
+    planner_llm: nemotron_vllm
+    max_turns: 2
+    enable_plan_approval: false
+    log_response_max_chars: 2000
+    verbose: true
+
+  shallow_research_agent:
+    _type: shallow_research_agent
+    llm: nemotron_vllm
+    max_llm_turns: 12
+    max_tool_iterations: 8
+
+  deep_research_agent:
+    _type: deep_research_agent
+    orchestrator_llm: nemotron_vllm
+    researcher_llm: nemotron_vllm
+    planner_llm: nemotron_vllm
+    max_loops: 1
+
+workflow:
+  _type: chat_deepresearcher_agent
+  enable_escalation: true
+  enable_clarifier: false
+  checkpoint_db: ${AIQ_CHECKPOINT_DB:-/home/nvidia/NV-Disruptron/checkpoints.db}

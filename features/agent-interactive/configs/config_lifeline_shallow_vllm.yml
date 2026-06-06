@@ -1,0 +1,60 @@
+# LifeLine Grid shallow-only test config (non-interactive nat run)
+# No cloud API keys — local vLLM + MCP only
+general:
+  telemetry:
+    logging:
+      console:
+        _type: console
+        level: INFO
+
+llms:
+  nemotron_vllm:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    max_tokens: 4096
+    num_retries: 3
+
+function_groups:
+  tfl_london:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args: ["--directory", "/home/nvidia/NV-Disruptron/tfl-mcp-server", "run", "python", "server.py"]
+  london_spatial:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args: ["--directory", "/home/nvidia/NV-Disruptron/london-spatial-mcp", "run", "python", "server.py"]
+  london_impact:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args: ["--directory", "/home/nvidia/NV-Disruptron/london-impact-mcp", "run", "python", "server.py"]
+
+functions:
+  data_sources:
+    _type: data_source_registry
+    sources:
+      - id: tfl_london
+        name: "TfL Live Transport"
+        tools: [tfl_london]
+      - id: london_spatial
+        name: "London Spatial & Deprivation"
+        tools: [london_spatial]
+      - id: london_impact
+        name: "Disruption Impact Scoring"
+        tools: [london_impact]
+
+  shallow_research_agent:
+    _type: shallow_research_agent
+    llm: nemotron_vllm
+    max_llm_turns: 15
+    max_tool_iterations: 10
+
+workflow:
+  _type: shallow_research_workflow

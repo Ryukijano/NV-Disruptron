@@ -1,0 +1,293 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 124609 MiB):
+  Device 0: NVIDIA GB10, compute capability 12.1, VMM: yes, VRAM: 124609 MiB
+main: n_parallel is set to auto, using n_parallel = 4 and kv_unified = true
+build_info: b8999-b97ebdc98
+system_info: n_threads = 20 (n_threads_batch = 20) / 20 | CUDA : ARCHS = 1210 | USE_GRAPHS = 1 | PEER_MAX_BATCH_SIZE = 128 | BLACKWELL_NATIVE_FP4 = 1 | CPU : NEON = 1 | ARM_FMA = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+init: api_keys: ****line
+init: using 19 threads for HTTP server
+start: binding port with default address family
+main: loading model
+srv    load_model: loading model '/home/nvidia/unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf'
+common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
+common_params_fit_impl: getting device memory data for initial parameters:
+common_memory_breakdown_print: | memory breakdown [MiB] |  total     free     self   model   context   compute    unaccounted |
+common_memory_breakdown_print: |   - CUDA0 (GB10)       | 124609 = 117404 + (23012 = 22454 +     286 +     271) +      -15807 |
+common_memory_breakdown_print: |   - Host               |                      399 =   357 +       0 +      42                |
+common_params_fit_impl: projected to use 23012 MiB of device memory vs. 117404 MiB of free device memory
+common_params_fit_impl: will leave 94392 >= 1024 MiB of free device memory, no changes needed
+common_fit_params: successfully fit params to free device memory
+common_fit_params: fitting params to free memory took 0.22 seconds
+llama_model_load_from_file_impl: using device CUDA0 (NVIDIA GB10) (000f:01:00.0) - 117596 MiB free
+llama_model_loader: loaded meta data with 56 key-value pairs and 401 tensors from /home/nvidia/unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = nemotron_h_moe
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   3:                      general.sampling.temp f32              = 0.600000
+llama_model_loader: - kv   4:                               general.name str              = Nvidia-Nemotron-3-Nano-Omni-30B-A3B-R...
+llama_model_loader: - kv   5:                           general.finetune str              = Reasoning
+llama_model_loader: - kv   6:                           general.basename str              = Nvidia-Nemotron-3-Nano-Omni-30B-A3B-R...
+llama_model_loader: - kv   7:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv   8:                         general.size_label str              = 30B-A3B
+llama_model_loader: - kv   9:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv  10:                 nemotron_h_moe.block_count u32              = 52
+llama_model_loader: - kv  11:              nemotron_h_moe.context_length u32              = 1048576
+llama_model_loader: - kv  12:            nemotron_h_moe.embedding_length u32              = 2688
+llama_model_loader: - kv  13:         nemotron_h_moe.feed_forward_length arr[i32,52]      = [0, 1856, 0, 1856, 0, 0, 1856, 0, 185...
+llama_model_loader: - kv  14:        nemotron_h_moe.attention.head_count u32              = 32
+llama_model_loader: - kv  15:     nemotron_h_moe.attention.head_count_kv arr[i32,52]      = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, ...
+llama_model_loader: - kv  16:              nemotron_h_moe.rope.freq_base f32              = 10000.000000
+llama_model_loader: - kv  17: nemotron_h_moe.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  18: nemotron_h_moe.attention.layer_norm_epsilon f32              = 0.000010
+llama_model_loader: - kv  19:           nemotron_h_moe.expert_used_count u32              = 6
+llama_model_loader: - kv  20:          nemotron_h_moe.expert_group_count u32              = 1
+llama_model_loader: - kv  21:     nemotron_h_moe.expert_group_used_count u32              = 1
+llama_model_loader: - kv  22:                  nemotron_h_moe.vocab_size u32              = 131072
+llama_model_loader: - kv  23:        nemotron_h_moe.rope.dimension_count u32              = 84
+llama_model_loader: - kv  24:             nemotron_h_moe.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  25:              nemotron_h_moe.ssm.state_size u32              = 128
+llama_model_loader: - kv  26:             nemotron_h_moe.ssm.group_count u32              = 8
+llama_model_loader: - kv  27:              nemotron_h_moe.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  28:          nemotron_h_moe.ssm.time_step_rank u32              = 64
+llama_model_loader: - kv  29:      nemotron_h_moe.rope.scaling.finetuned bool             = false
+llama_model_loader: - kv  30:        nemotron_h_moe.attention.key_length u32              = 128
+llama_model_loader: - kv  31:      nemotron_h_moe.attention.value_length u32              = 128
+llama_model_loader: - kv  32:  nemotron_h_moe.expert_feed_forward_length u32              = 1856
+llama_model_loader: - kv  33: nemotron_h_moe.expert_shared_feed_forward_length u32              = 3712
+llama_model_loader: - kv  34:                nemotron_h_moe.expert_count u32              = 128
+llama_model_loader: - kv  35:         nemotron_h_moe.expert_shared_count u32              = 1
+llama_model_loader: - kv  36:         nemotron_h_moe.expert_weights_norm bool             = true
+llama_model_loader: - kv  37:        nemotron_h_moe.expert_weights_scale f32              = 2.500000
+llama_model_loader: - kv  38:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  39:                         tokenizer.ggml.pre str              = pixtral
+llama_model_loader: - kv  40:                      tokenizer.ggml.tokens arr[str,131072]  = ["<unk>", "<s>", "</s>", "[INST]", "[...
+llama_model_loader: - kv  41:                  tokenizer.ggml.token_type arr[i32,131072]  = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, ...
+llama_model_loader: - kv  42:                      tokenizer.ggml.merges arr[str,269443]  = ["Ġ Ġ", "Ġ t", "e r", "i n", "Ġ �...
+llama_model_loader: - kv  43:                tokenizer.ggml.bos_token_id u32              = 1
+llama_model_loader: - kv  44:                tokenizer.ggml.eos_token_id u32              = 11
+llama_model_loader: - kv  45:            tokenizer.ggml.unknown_token_id u32              = 0
+llama_model_loader: - kv  46:            tokenizer.ggml.padding_token_id u32              = 999
+llama_model_loader: - kv  47:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  48:               tokenizer.ggml.add_eos_token bool             = false
+llama_model_loader: - kv  49:                    tokenizer.chat_template str              = {% macro render_extra_keys(json_dict,...
+llama_model_loader: - kv  50:               general.quantization_version u32              = 2
+llama_model_loader: - kv  51:                          general.file_type u32              = 15
+llama_model_loader: - kv  52:                      quantize.imatrix.file str              = NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-R...
+llama_model_loader: - kv  53:                   quantize.imatrix.dataset str              = unsloth_calibration_NVIDIA-Nemotron-3...
+llama_model_loader: - kv  54:             quantize.imatrix.entries_count u32              = 185
+llama_model_loader: - kv  55:              quantize.imatrix.chunks_count u32              = 72
+llama_model_loader: - type  f32:  237 tensors
+llama_model_loader: - type q5_0:   22 tensors
+llama_model_loader: - type q5_1:   22 tensors
+llama_model_loader: - type q8_0:  120 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 22.28 GiB (6.06 BPW) 
+load: 0 unused tokens
+load: printing all EOG tokens:
+load:   - 2 ('</s>')
+load:   - 11 ('<|im_end|>')
+load: special tokens cache size = 1000
+load: token to piece cache size = 0.8498 MB
+print_info: arch                  = nemotron_h_moe
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 1048576
+print_info: n_embd                = 2688
+print_info: n_embd_inp            = 2688
+print_info: n_layer               = 52
+print_info: n_head                = 32
+print_info: n_head_kv             = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+print_info: n_rot                 = 84
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: n_embd_head_k         = 128
+print_info: n_embd_head_v         = 128
+print_info: n_gqa                 = [0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+print_info: n_embd_k_gqa          = [0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+print_info: n_embd_v_gqa          = [0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-05
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: n_ff                  = [0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 1856, 0, 0, 1856, 0, 1856, 0, 1856, 0, 1856, 0, 1856]
+print_info: n_expert              = 128
+print_info: n_expert_used         = 6
+print_info: n_expert_groups       = 1
+print_info: n_group_used          = 1
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = -1
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 1048576
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: ssm_d_conv            = 4
+print_info: ssm_d_inner           = 4096
+print_info: ssm_d_state           = 128
+print_info: ssm_dt_rank           = 64
+print_info: ssm_n_group           = 8
+print_info: ssm_dt_b_c_rms        = 0
+print_info: model type            = 31B.A3.5B
+print_info: model params          = 31.58 B
+print_info: general.name          = Nvidia-Nemotron-3-Nano-Omni-30B-A3B-Reasoning
+print_info: f_embedding_scale     = 0.000000
+print_info: f_residual_scale      = 0.000000
+print_info: f_attention_scale     = 0.000000
+print_info: n_ff_shexp            = 3712
+print_info: vocab type            = BPE
+print_info: n_vocab               = 131072
+print_info: n_merges              = 269443
+print_info: BOS token             = 1 '<s>'
+print_info: EOS token             = 11 '<|im_end|>'
+print_info: EOT token             = 11 '<|im_end|>'
+print_info: UNK token             = 0 '<unk>'
+print_info: PAD token             = 999 '<SPECIAL_999>'
+print_info: LF token              = 1010 'Ċ'
+print_info: EOG token             = 2 '</s>'
+print_info: EOG token             = 11 '<|im_end|>'
+print_info: max token length      = 150
+load_tensors: loading model tensors, this can take a while... (mmap = true, direct_io = false)
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 51 repeating layers to GPU
+load_tensors: offloaded 53/53 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   357.00 MiB
+load_tensors:        CUDA0 model buffer size = 22454.03 MiB
+.......................................................
+common_init_result: added </s> logit bias = -inf
+common_init_result: added <|im_end|> logit bias = -inf
+llama_context: constructing llama_context
+llama_context: n_seq_max     = 4
+llama_context: n_ctx         = 16384
+llama_context: n_ctx_seq     = 16384
+llama_context: n_batch       = 2048
+llama_context: n_ubatch      = 512
+llama_context: causal_attn   = 1
+llama_context: flash_attn    = auto
+llama_context: kv_unified    = true
+llama_context: freq_base     = 10000.0
+llama_context: freq_scale    = 1
+llama_context: n_ctx_seq (16384) < n_ctx_train (1048576) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     2.00 MiB
+llama_kv_cache:      CUDA0 KV buffer size =    96.00 MiB
+llama_kv_cache: size =   96.00 MiB ( 16384 cells,   6 layers,  4/1 seqs), K (f16):   48.00 MiB, V (f16):   48.00 MiB
+llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 128
+llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 128
+llama_memory_recurrent:      CUDA0 RS buffer size =   190.47 MiB
+llama_memory_recurrent: size =  190.47 MiB (     4 cells,  52 layers,  4 seqs), R (f32):    6.47 MiB, S (f32):  184.00 MiB
+sched_reserve: reserving ...
+sched_reserve: Flash Attention was auto, set to enabled
+sched_reserve: resolving fused Gated Delta Net support:
+sched_reserve: fused Gated Delta Net (autoregressive) enabled
+sched_reserve: fused Gated Delta Net (chunked) enabled
+sched_reserve:      CUDA0 compute buffer size =   271.75 MiB
+sched_reserve:  CUDA_Host compute buffer size =    42.51 MiB
+sched_reserve: graph nodes  = 2188
+sched_reserve: graph splits = 2
+sched_reserve: reserve took 33.60 ms, sched copies = 1
+common_init_from_params: warming up the model with an empty run - please wait ... (--no-warmup to disable)
+clip_model_loader: model name:   Nvidia-Nemotron-3-Nano-Omni-30B-A3B-Reasoning
+clip_model_loader: description:  
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    390
+clip_model_loader: n_kv:         24
+
+clip_model_loader: has vision encoder
+clip_ctx: CLIP using CUDA0 backend
+load_hparams: projector:          nemotron_v2_vl
+load_hparams: n_embd:             1280
+load_hparams: n_head:             16
+load_hparams: n_ff:               5120
+load_hparams: n_layer:            32
+load_hparams: ffn_op:             gelu
+load_hparams: projection_dim:     2688
+
+--- vision hparams ---
+load_hparams: image_size:         512
+load_hparams: patch_size:         16
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: n_merge:            2
+load_hparams: n_wa_pattern: 0
+
+load_hparams: model size:         1515.85 MiB
+load_hparams: metadata size:      0.14 MiB
+warmup: warmup with image size = 512 x 512
+alloc_compute_meta:      CUDA0 compute buffer size =    35.24 MiB
+alloc_compute_meta:        CPU compute buffer size =     3.00 MiB
+alloc_compute_meta: graph splits = 1, nodes = 889
+warmup: flash attention is enabled
+srv    load_model: loaded multimodal model, '/home/nvidia/unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/mmproj-BF16.gguf'
+srv    load_model: initializing slots, n_slots = 4
+common_context_can_seq_rm: the target context does not support partial sequence removal
+srv    load_model: speculative decoding will use checkpoints
+no implementations specified for speculative decoding
+slot   load_model: id  0 | task -1 | new slot, n_ctx = 16384
+no implementations specified for speculative decoding
+slot   load_model: id  1 | task -1 | new slot, n_ctx = 16384
+no implementations specified for speculative decoding
+slot   load_model: id  2 | task -1 | new slot, n_ctx = 16384
+no implementations specified for speculative decoding
+slot   load_model: id  3 | task -1 | new slot, n_ctx = 16384
+srv    load_model: prompt cache is enabled, size limit: 8192 MiB
+srv    load_model: use `--cache-ram 0` to disable the prompt cache
+srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
+srv          init: init: idle slots will be saved to prompt cache and cleared upon starting a new task
+init: chat template, example_format: '<|im_start|>system
+You are a helpful assistant<|im_end|>
+<|im_start|>user
+Hello<|im_end|>
+<|im_start|>assistant
+<think></think>Hi there<|im_end|>
+<|im_start|>user
+How are you?<|im_end|>
+<|im_start|>assistant
+<think></think>'
+srv          init: init: chat template, thinking = 0
+main: model loaded
+main: server is listening on http://127.0.0.1:8000
+main: starting the main loop...
+srv  update_slots: all slots are idle
+srv  params_from_: Chat format: peg-native
+slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+srv  get_availabl: updating prompt cache
+srv          load:  - looking for better prompt, base f_keep = -1.000, sim = 0.000
+srv        update:  - cache state: 0 prompts, 0.000 MiB (limits: 8192.000 MiB, 16384 tokens, 8589934592 est)
+srv  get_availabl: prompt cache update took 0.00 ms
+slot launch_slot_: id  3 | task -1 | sampler chain: logits -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+slot update_slots: id  3 | task 0 | new prompt, n_ctx_slot = 16384, n_keep = 0, task.n_tokens = 52
+slot update_slots: id  3 | task 0 | n_tokens = 0, memory_seq_rm [0, end)
+slot update_slots: id  3 | task 0 | prompt processing progress, n_tokens = 48, batch.n_tokens = 48, progress = 0.923077
+slot update_slots: id  3 | task 0 | n_tokens = 48, memory_seq_rm [48, end)
+slot init_sampler: id  3 | task 0 | init sampler, took 0.01 ms, tokens: text = 52, total = 52
+slot update_slots: id  3 | task 0 | prompt processing done, n_tokens = 52, batch.n_tokens = 4
+slot print_timing: id  3 | task 0 | 
+prompt eval time =     267.52 ms /    52 tokens (    5.14 ms per token,   194.38 tokens per second)
+       eval time =     833.35 ms /    58 tokens (   14.37 ms per token,    69.60 tokens per second)
+      total time =    1100.87 ms /   110 tokens
+slot      release: id  3 | task 0 | stop processing: n_tokens = 109, truncated = 0
+srv  update_slots: all slots are idle
+srv  log_server_r: done request: POST /v1/chat/completions 127.0.0.1 200
+srv  log_server_r: done request: GET / 127.0.0.1 200
+srv  log_server_r: done request: GET /bundle.css 127.0.0.1 200
+srv  log_server_r: done request: GET /bundle.js 127.0.0.1 200
+Unauthorized: Invalid API Key
+srv  log_server_r: done request: HEAD /cors-proxy 127.0.0.1 401
+Unauthorized: Invalid API Key
+srv  log_server_r: done request: GET /tools 127.0.0.1 401
+Unauthorized: Invalid API Key
+Unauthorized: Invalid API Key
+srv  log_server_r: done request: GET /_app/version.json 127.0.0.1 401
+Unauthorized: Invalid API Key
+Unauthorized: Invalid API Key
+srv  log_server_r: done request: POST /v1/chat/completions 127.0.0.1 401
+srv    operator(): operator(): cleaning up before exit...
+common_memory_breakdown_print: | memory breakdown [MiB] |  total    free     self   model   context   compute    unaccounted |
+common_memory_breakdown_print: |   - CUDA0 (GB10)       | 124609 = 92125 + (23012 = 22454 +     286 +     271) +        9471 |
+common_memory_breakdown_print: |   - Host               |                     399 =   357 +       0 +      42                |

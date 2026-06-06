@@ -1,0 +1,14 @@
+# Python / uv
+**/.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+**/.env
+
+# Disruptron Telegram runtime state
+features/delivery/telegram/data/subscriptions.json
+
+# Large generated caches (keep source xlsx + csv)
+data/*.zip
