@@ -26,6 +26,16 @@ MCP server that gives AI agents secure, structured access to the **Transport for
 - `get_road_disruption_categories()` / `get_road_disruption_severities()` — TfL metadata
 - `list_tfl_roads()` — discover road corridor IDs (a1, a406, inner ring, …)
 
+### EV charging & car parks (retried 2026-06-06)
+- `get_parking_and_charging_snapshot()` — **one-call** live EV + car park directory
+- `get_ev_charge_summary()` — `GET /Occupancy/ChargeConnector` ✅ ~349 connectors live
+- `get_ev_charge_connectors(status, limit)` — filter Available / Charging / OutOfService
+- `get_ev_charge_connector(source_system_place_id)` — lookup by e.g. `ChargePointESB-UT06EL-3`
+- `list_tfl_car_parks()` — `GET /Place/Type/CarPark` ✅ 58 parks (capacity, tariffs, hours)
+- `get_car_park_detail(car_park_id)` — full metadata + occupancy attempt
+- `get_car_park_occupancy(car_park_id)` — live bays; **TfL HTTP 500** → metadata fallback
+- `get_stop_car_parks(stop_id)` — use Naptan e.g. `940GZZLUGFD` (not hub ID)
+
 ### Environment
 - `get_air_quality()` — current London air quality forecast
 - `get_tfl_api_status()` — check if your key is loaded
@@ -49,7 +59,7 @@ All tools return clean JSON from the official TfL API. **No API key required** f
 ### 2. Configure the Server
 
 ```bash
-cd tfl-mcp-server
+cd platform/mcp/transport
 cp .env.example .env
 # Edit .env and put your real key:
 # TFL_APP_KEY=your_actual_key_here
@@ -94,7 +104,7 @@ Example Claude Desktop snippet (stdio):
   "mcpServers": {
     "tfl-london": {
       "command": "uv",
-      "args": ["--directory", "/absolute/path/to/tfl-mcp-server", "run", "python", "server.py"],
+      "args": ["--directory", "/absolute/path/to/platform/mcp/transport", "run", "python", "server.py"],
       "env": {
         "TFL_APP_KEY": "your_key_here"
       }

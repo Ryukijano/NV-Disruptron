@@ -1,0 +1,563 @@
+{
+  "fetched_at": "2026-06-06T13-04-43Z",
+  "briefing": {
+    "summary": "Tube: 3 lines not on good service; 2 active disruption(s). Roads: 6 congested corridors; 80 active road disruptions. Streets: 99 disrupted segments; 10 closed or restricted. EV charging: 246 available / 349 connectors (70 charging, 24 out of service). Car parks: 58 TfL sites (8340 total spaces); live bay occupancy unavailable. Most vulnerable wards on affected lines: District: Mayesbrook (IMD rank None); Piccadilly: Finsbury Park (IMD rank None).",
+    "live_transport": {
+      "tube": {
+        "lines_not_good_service": [
+          {
+            "line": "District",
+            "status": "Part Closure"
+          },
+          {
+            "line": "Piccadilly",
+            "status": "Part Closure"
+          },
+          {
+            "line": "Waterloo & City",
+            "status": "Planned Closure"
+          }
+        ],
+        "active_disruption_count": 2,
+        "disruption_summaries": [
+          "Waterloo & City line: service operates 06:00 until 00:30, Monday to Friday only. There is no service on Saturdays, Sundays and on bank/public holidays.",
+          "Waterloo & City line: service operates 06:00 until 00:30, Monday to Friday only. There is no service on Saturdays, Sundays and on bank/public holidays."
+        ]
+      },
+      "roads": {
+        "congested_corridors": [
+          {
+            "id": "a12",
+            "displayName": "A12",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a23",
+            "displayName": "A23",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a3",
+            "displayName": "A3",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a406",
+            "displayName": "North Circular (A406)",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "bishopsgate cross route",
+            "displayName": "Bishopsgate Cross Route",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "inner ring",
+            "displayName": "Inner Ring",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          }
+        ],
+        "congested_corridor_count": 6,
+        "all_corridor_status": [
+          {
+            "id": "a1",
+            "displayName": "A1",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a10",
+            "displayName": "A10",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a12",
+            "displayName": "A12",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a13",
+            "displayName": "A13",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a2",
+            "displayName": "A2",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a20",
+            "displayName": "A20",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a205",
+            "displayName": "South Circular (A205)",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a21",
+            "displayName": "A21",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a23",
+            "displayName": "A23",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a24",
+            "displayName": "A24",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a3",
+            "displayName": "A3",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a316",
+            "displayName": "A316",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a4",
+            "displayName": "A4",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a40",
+            "displayName": "A40",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "a406",
+            "displayName": "North Circular (A406)",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "a41",
+            "displayName": "A41",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "bishopsgate cross route",
+            "displayName": "Bishopsgate Cross Route",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "blackwall tunnel",
+            "displayName": "Blackwall Tunnel",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "city route",
+            "displayName": "City Route",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "farringdon cross route",
+            "displayName": "Farringdon Cross Route",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "inner ring",
+            "displayName": "Inner Ring",
+            "statusSeverity": "Serious",
+            "statusSeverityDescription": "Serious"
+          },
+          {
+            "id": "silvertown tunnel",
+            "displayName": "Silvertown Tunnel",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "southern river route",
+            "displayName": "Southern River Route",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          },
+          {
+            "id": "western cross route",
+            "displayName": "Western Cross Route",
+            "statusSeverity": "Good",
+            "statusSeverityDescription": "No Exceptional Delays"
+          }
+        ],
+        "serious_disruption_count": 10,
+        "top_disruptions": [
+          {
+            "id": "TIMS-228980",
+            "location": "[A1020] LEAMOUTH ROAD ROUNDABOUT (E14 ) (Tower Hamlets)",
+            "comments": "[A1020] Leamouth Road Roundabout (All approaches) between [A1262] Leamouth Road, [A1261] Aspen Way and [A1020] Lower Lea Crossing - Lane one & two closure on the approach to the roundabout during utility works.",
+            "currentUpdate": "Traffic is slow moving westbound over Lower Lea Crossing with Tailbacks from Tidal Basin Road. Expect delays.",
+            "severity": "Serious",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "silvertown tunnel"
+            ],
+            "coordinates": [
+              0.000218,
+              51.511099
+            ]
+          },
+          {
+            "id": "TIMS-229214",
+            "location": "[A3217] KINGS ROAD (SW10 ,SW3 ,SW6 ) (Hammersmith & Fulham,Kensington & Chelsea)",
+            "comments": "[A3217] Kings Road (All directions) at the junction of [A3220] Gunter Grove - Temporary signals in operation to facilitate works by UKPN.",
+            "currentUpdate": "Westbound traffic is subject to delays on the approach back to Oakley Street. Gunter Grove has slow moving northbound traffic tailing back intermittently to Cheyne Walk and there are additional delays back along Battersea Bridge and Chelsea Embankment.",
+            "severity": "Serious",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [],
+            "coordinates": [
+              -0.18328,
+              51.481191
+            ]
+          },
+          {
+            "id": "TIMS-228450",
+            "location": "[A1010] HERTFORD ROAD (EN3 ,EN8 ) (Enfield)",
+            "comments": "[A1010] Hertford Road (Both directions) at the junction of High Street - Temporary signals in place for local borough works.",
+            "currentUpdate": "Traffic is slow moving in both directions on Hartford Road. From Northbound queues to Holly Road. In addition Mollison avenue westbound queues from Solar Way. Expect Delays.",
+            "severity": "Serious",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [],
+            "coordinates": [
+              -0.033541,
+              51.682312
+            ]
+          },
+          {
+            "id": "TIMS-224034",
+            "location": "[A3031] ALBERT BRIDGE ROAD (SW11 ,SW3 ) (Kensington & Chelsea,Wandsworth)",
+            "comments": "[A3031] Albert Bridge Road (Both directions) at the junction of [A3212] Chelsea Embankment - The bridge is closed for local borough works.",
+            "currentUpdate": "Use an alternative route. There are northbound delays on Battersea Bridge Road back to Hyde Lane, and  eastbound on Battersea Church Street to Bollingbroke Walk",
+            "severity": "Serious",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [],
+            "coordinates": [
+              -0.167217,
+              51.48322
+            ]
+          },
+          {
+            "id": "TIMS-227140",
+            "location": "[A109] LORDSHIP LANE (N17 ) (Haringey)",
+            "comments": "[A109] Lordship Lane (Both directions) at the junction of Broadwater Road - Temporary traffic signals in operation to facilitate UKPN works.",
+            "currentUpdate": "There are minor delays reported approaching the works. ",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a10"
+            ],
+            "coordinates": [
+              -0.076155,
+              51.598404
+            ]
+          },
+          {
+            "id": "TIMS-206772",
+            "location": "[A12] EASTERN AVENUE EAST (RM2 ,RM3 ) (Havering)",
+            "comments": "Gallows Corner Flyover Refurbishment - [A12] Eastern Avenue East (All directions) at the junction of [A12] Colchester Road - Various restrictions, to facilitate the refurbishment of Gallows Corner Flyover. Full closure westbound only of the Flyover and westbound A12 and A127. Lane restrictions in place eastbound on A12 and on all approaches to Gallows Corner roundabout to facilitate reconstructing and resurfacing. ",
+            "currentUpdate": "Use an alternative route. Traffic is currently moving well on diversion routes. There are 2-4 minute delays on Squirrels Heath Lane and minor delays on the A127 towards Gallows Corner. In addition, extra congestion is possible on the westbound A13 and M11 southbound during peak periods as works continue.",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a12"
+            ],
+            "coordinates": [
+              0.212921,
+              51.592491
+            ]
+          },
+          {
+            "id": "TIMS-223032",
+            "location": "[A1205] BURDETT ROAD (E14 ) (Tower Hamlets)",
+            "comments": "[A1205] Burdett Road (Both directions) at the junction of [A13] East India Dock Road - Lane restrictions in place to facilitate Thames Water works.",
+            "currentUpdate": "Delays are possible.",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a13"
+            ],
+            "coordinates": [
+              -0.027991,
+              51.512386
+            ]
+          },
+          {
+            "id": "TIMS-213893",
+            "location": "[A23] STREATHAM HILL (SW16 ,SW2 ) (Lambeth)",
+            "comments": "[A23] Streatham Hill (Both directions) between [A205] Christchurch Road and Leigham Court Road - Various restrictions for TfL works. Lane restrictions, in place over the course of the works. There will be full overnight (22:00-05:00) closures (Telford Avenue to Leigham Court Road on 28th June and Telford Avenue to Christchurch Road on 29th June).",
+            "currentUpdate": "Delays are possible.",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a23"
+            ],
+            "coordinates": [
+              -0.125602,
+              51.440164
+            ]
+          },
+          {
+            "id": "TIMS-229103",
+            "location": "[A3] TOLWORTH RISE SOUTH (KT5 ) (Kingston upon Thames)",
+            "comments": "[A3] Tolworth Rise South (Southbound) at the junction of [A3] Hook Rise South - Lane one (of three) closed and entry slip closed to facilitate roadworks.",
+            "currentUpdate": "Use alternative route. Traffic is flowing well on diversion. ",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a3"
+            ],
+            "coordinates": [
+              -0.280593,
+              51.379033
+            ]
+          },
+          {
+            "id": "TIMS-228531",
+            "location": "[A501] MARYLEBONE ROAD (NW1 ,W1U ,W2 ) (Westminster)",
+            "comments": "[A501] Marylebone Road (Eastbound) at the junction of Harewood Avenue - The bus lane (lane one) is closed for works. Harewood Avenue is also closed northbound due to these works.",
+            "currentUpdate": "Delays are possible.",
+            "severity": "Moderate",
+            "category": "Works",
+            "hasClosures": false,
+            "corridorIds": [
+              "a40",
+              "inner ring"
+            ],
+            "coordinates": [
+              -0.163193,
+              51.521232
+            ]
+          }
+        ],
+        "total_active_disruptions": 80
+      },
+      "streets": {
+        "total_disrupted_segments": 99,
+        "closed_or_restricted_count": 10,
+        "top_closed_streets": [
+          {
+            "streetName": "GREEN STREET (E7 )",
+            "closure": "Closed",
+            "location": "[A118] ROMFORD ROAD (E7 ) (Newham)",
+            "comments": "[A118] Romford Road (Both directions) at the junction of [B167] Green Street - Temporary signals are in use to facilitate roadworks. Additionally, there is no access into Green Street from Romford Road. ",
+            "severity": "Minimal",
+            "category": "Works"
+          },
+          {
+            "streetName": "GREEN STREET (E7 )",
+            "closure": "Closed",
+            "location": "[A118] ROMFORD ROAD (E7 ) (Newham)",
+            "comments": "[A118] Romford Road (Both directions) at the junction of [B167] Green Street - Temporary signals are in use to facilitate roadworks. Additionally, there is no access into Green Street from Romford Road. ",
+            "severity": "Minimal",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "VARNDELL STREET (NW1 )",
+            "closure": "Closed",
+            "location": "[A400] HAMPSTEAD ROAD (NW1 ) (Camden)",
+            "comments": "[A400] Hampstead Road (Both directions) at the junction of Robert Street - Various restrictions in place, including temporary signals, for HS2 works. Additionally, Varndell Street is closed in both directions.",
+            "severity": "Moderate",
+            "category": "Works"
+          },
+          {
+            "streetName": "[B509] HILGROVE ROAD (NW6 ,NW8 )",
+            "closure": "Closed",
+            "location": "[A41] FINCHLEY ROAD (NW3 ,NW6 ,NW8 ) (Camden,Westminster)",
+            "comments": "[A41] Finchley Road (Northbound) at the junction of [B509] Hilgrove Road - Lane restrictions on Finchley Road to facilitate HS2 gas main replacement works. Hilgrove road eastbound is closed.",
+            "severity": "Minimal",
+            "category": "Works"
+          }
+        ]
+      },
+      "ev_charging": {
+        "total_connectors": 349,
+        "available": 246,
+        "charging": 70,
+        "out_of_service": 24,
+        "unknown": 9,
+        "sample_available_ids": [
+          "ChargePointESB-UT06EL-3",
+          "ChargePointESB-UT03R5-1",
+          "ChargePointESB-UT03R5-2",
+          "ChargePointESB-UT03R5-3",
+          "ChargePointESB-UT01NT-1"
+        ]
+      },
+      "car_parks": {
+        "total_car_parks": 58,
+        "total_listed_spaces": 8340,
+        "live_occupancy_api_status": "unavailable",
+        "live_occupancy_note": "GET /Occupancy/CarPark returns HTTP 500 from TfL (retried 2026-06-06)"
+      },
+      "fetched_at": null
+    },
+    "parking_and_charging": {
+      "ev_charging": {
+        "total_connectors": 349,
+        "available": 246,
+        "charging": 70,
+        "out_of_service": 24,
+        "unknown": 9,
+        "sample_available_ids": [
+          "ChargePointESB-UT06EL-3",
+          "ChargePointESB-UT03R5-1",
+          "ChargePointESB-UT03R5-2",
+          "ChargePointESB-UT03R5-3",
+          "ChargePointESB-UT01NT-1"
+        ]
+      },
+      "car_parks": {
+        "total_car_parks": 58,
+        "total_listed_spaces": 8340,
+        "live_occupancy_api_status": "unavailable",
+        "live_occupancy_note": "GET /Occupancy/CarPark returns HTTP 500 from TfL (retried 2026-06-06)"
+      }
+    },
+    "equity_impact": [
+      {
+        "line": "District",
+        "status": "Part Closure",
+        "top_vulnerable_ward": {
+          "ward_code": "E05000036",
+          "ward_name": "Mayesbrook",
+          "borough": "Barking and Dagenham",
+          "population": 10813,
+          "working_age_population": 6178,
+          "imd_extent_pct": 0.7838,
+          "imd_extent_rank": 9,
+          "imd_average_rank": 4849.35,
+          "imd_deprivation_rank": 12,
+          "deprivation_quintile": 1,
+          "gva_per_job_gbp_k": 48.2,
+          "severity_weight": 0.9,
+          "vulnerability_score": 1.3717,
+          "impact_index": 123.45,
+          "commuters_estimated": 6178,
+          "economic_exposure_gbp_k_per_hour": 134.0
+        },
+        "severity_weight": 0.9
+      },
+      {
+        "line": "Piccadilly",
+        "status": "Part Closure",
+        "top_vulnerable_ward": {
+          "ward_code": "E05000371",
+          "ward_name": "Finsbury Park",
+          "borough": "Islington",
+          "population": 16310,
+          "working_age_population": 11612,
+          "imd_extent_pct": 0.5314,
+          "imd_extent_rank": 46,
+          "imd_average_rank": 7134.39,
+          "imd_deprivation_rank": 60,
+          "deprivation_quintile": 1,
+          "gva_per_job_gbp_k": 69.8,
+          "severity_weight": 0.9,
+          "vulnerability_score": 0.93,
+          "impact_index": 83.7,
+          "commuters_estimated": 11612,
+          "economic_exposure_gbp_k_per_hour": 364.73
+        },
+        "severity_weight": 0.9
+      },
+      {
+        "line": "Waterloo & City",
+        "status": "Planned Closure",
+        "top_vulnerable_ward": null,
+        "severity_weight": 0.4
+      }
+    ],
+    "data_sources": [
+      "TfL Unified API",
+      "London IMD 2019 wards",
+      "GLA population/GVA"
+    ]
+  }
+}

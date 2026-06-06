@@ -1,0 +1,144 @@
+# NV-Disruptron — AI-Q API sidecar (deep + shallow research, London MCP, local vLLM)
+# Started by: ./scripts/disruptron run  →  http://127.0.0.1:8001
+# OpenClaw invokes via workspace skill disruptron-deep-research (scripts/aiq.py)
+
+general:
+  use_uvloop: true
+  telemetry:
+    logging:
+      console:
+        _type: console
+        level: INFO
+
+  front_end:
+    _type: aiq_api
+    runner_class: aiq_api.plugin.AIQAPIWorker
+    db_url: ${NAT_JOB_STORE_DB_URL:-sqlite+aiosqlite:///${DISRUPTRON_ROOT}/logs/jobs.db}
+    expiry_seconds: 86400
+    cors:
+      allow_origin_regex: 'http://localhost(:\d+)?|http://127.0.0.1(:\d+)?'
+      allow_methods:
+        - GET
+        - POST
+        - DELETE
+        - OPTIONS
+      allow_headers:
+        - "*"
+      allow_credentials: true
+      expose_headers:
+        - "*"
+
+llms:
+  nemotron_vllm_intent:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    top_p: 0.9
+    max_tokens: 4096
+    num_retries: 3
+
+  nemotron_vllm:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    top_p: 0.9
+    max_tokens: 4096
+    num_retries: 3
+
+function_groups:
+  tfl_london:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/transport"
+        - "run"
+        - "python"
+        - "server.py"
+
+  london_spatial:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/spatial"
+        - "run"
+        - "python"
+        - "server.py"
+
+  london_impact:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/impact"
+        - "run"
+        - "python"
+        - "server.py"
+
+functions:
+  data_sources:
+    _type: data_source_registry
+    sources:
+      - id: tfl_london
+        name: "TfL Live Transport & Roads"
+        description: >
+          Live Tube/Overground, road traffic, EV charge connectors, car parks, air quality.
+        tools:
+          - tfl_london
+      - id: london_spatial
+        name: "London Spatial & Deprivation"
+        description: "Ward lookup, IMD 2019 deprivation, postcode/coordinate resolution."
+        tools:
+          - london_spatial
+      - id: london_impact
+        name: "Disruption Impact & City Briefing"
+        description: >
+          get_london_city_briefing; line→ward mapping; IMD-weighted disruption impact scoring.
+        tools:
+          - london_impact
+
+  intent_classifier:
+    _type: intent_classifier
+    llm: nemotron_vllm_intent
+
+  shallow_research_agent:
+    _type: shallow_research_agent
+    llm: nemotron_vllm
+    max_llm_turns: 14
+    max_tool_iterations: 8
+    exclude_tools:
+      - tfl_london__plan_journey
+      - tfl_london__get_mode_arrivals
+      - tfl_london__get_bike_points
+      - tfl_london__get_stop_crowding
+      - tfl_london__get_stop_arrivals
+      - tfl_london__search_stop_points
+      - tfl_london__list_line_modes
+      - tfl_london__get_lines_by_mode
+      - tfl_london__get_tfl_api_status
+      - tfl_london__get_road_disruption_categories
+      - tfl_london__get_road_disruption_severities
+      - tfl_london__list_tfl_roads
+
+  deep_research_agent:
+    _type: deep_research_agent
+    orchestrator_llm: nemotron_vllm
+    researcher_llm: nemotron_vllm
+    planner_llm: nemotron_vllm
+    max_loops: 2
+
+workflow:
+  _type: chat_deepresearcher_agent
+  enable_escalation: true
+  enable_clarifier: false
+  use_async_deep_research: true
+  checkpoint_db: ${AIQ_CHECKPOINT_DB:-${DISRUPTRON_ROOT}/checkpoints.db}

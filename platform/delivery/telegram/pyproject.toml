@@ -1,0 +1,10 @@
+[project]
+name = "disruptron-telegram"
+version = "0.1.0"
+description = "Disruptron Telegram channel."
+requires-python = ">=3.11"
+dependencies = [
+    "python-telegram-bot>=21.10",
+    "aiohttp>=3.11",
+    "python-dotenv>=1.0",
+]

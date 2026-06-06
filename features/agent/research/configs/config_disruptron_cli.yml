@@ -1,0 +1,142 @@
+# NV-Disruptron — legacy AI-Q config (optional deep-research path; default agent is OpenClaw)
+# Default: ./scripts/disruptron run  (OpenClaw TUI + heartbeat)
+# Legacy AI-Q: cd /home/nvidia/aiq && ./scripts/start_cli.sh --config_file $DISRUPTRON_CONFIG
+
+general:
+  telemetry:
+    logging:
+      console:
+        _type: console
+        level: INFO
+
+llms:
+  nemotron_vllm_intent:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    top_p: 0.9
+    max_tokens: 4096
+    num_retries: 3
+
+  nemotron_vllm:
+    _type: nim
+    model_name: ${VLLM_SERVED_MODEL:-nemotron_3_nano_omni}
+    base_url: ${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}
+    temperature: 0.2
+    top_p: 0.9
+    max_tokens: 2048
+    num_retries: 3
+
+function_groups:
+  tfl_london:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/transport"
+        - "run"
+        - "python"
+        - "server.py"
+
+  london_spatial:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/spatial"
+        - "run"
+        - "python"
+        - "server.py"
+
+  london_impact:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "${DISRUPTRON_ROOT}/platform/mcp/impact"
+        - "run"
+        - "python"
+        - "server.py"
+
+  google_calendar:
+    _type: mcp_client
+    server:
+      transport: stdio
+      command: "npx"
+      args:
+        - "@cocal/google-calendar-mcp"
+      env:
+        GOOGLE_OAUTH_CREDENTIALS: "${DISRUPTRON_ROOT}/gcp-oauth.keys.json"
+
+functions:
+  data_sources:
+    _type: data_source_registry
+    sources:
+      - id: tfl_london
+        name: "TfL Live Transport & Roads"
+        description: >
+          Live Tube/Overground, road traffic, EV charge connectors (Occupancy/ChargeConnector),
+          car park directory (Place/Type/CarPark), air quality, and journey planning.
+        tools:
+          - tfl_london
+      - id: london_spatial
+        name: "London Spatial & Deprivation"
+        description: "Ward lookup, IMD 2019 deprivation, postcode/coordinate resolution."
+        tools:
+          - london_spatial
+      - id: london_impact
+        name: "Disruption Impact & City Briefing"
+        description: >
+          get_london_city_briefing for live London overview; line→ward mapping;
+          IMD-weighted disruption impact scoring and economic exposure.
+        tools:
+          - london_impact
+      - id: google_calendar
+        name: "Google Calendar"
+        description: >
+          User schedule, meetings, free/busy — correlate transport disruptions with commutes and events.
+        tools:
+          - google_calendar
+
+  intent_classifier:
+    _type: intent_classifier
+    llm: nemotron_vllm_intent
+
+  shallow_research_agent:
+    _type: shallow_research_agent
+    llm: nemotron_vllm
+    max_llm_turns: 12
+    max_tool_iterations: 6
+    exclude_tools:
+      - tfl_london__plan_journey
+      - tfl_london__get_mode_arrivals
+      - tfl_london__get_bike_points
+      - tfl_london__get_stop_crowding
+      - tfl_london__get_stop_arrivals
+      - tfl_london__search_stop_points
+      - tfl_london__list_line_modes
+      - tfl_london__get_lines_by_mode
+      - tfl_london__get_tfl_api_status
+      - tfl_london__get_road_disruption_categories
+      - tfl_london__get_road_disruption_severities
+      - tfl_london__list_tfl_roads
+
+  deep_research_agent:
+    _type: deep_research_agent
+    orchestrator_llm: nemotron_vllm
+    researcher_llm: nemotron_vllm
+    planner_llm: nemotron_vllm
+    max_loops: 1
+
+workflow:
+  _type: chat_deepresearcher_agent
+  enable_escalation: true
+  enable_clarifier: false
+  checkpoint_db: ${AIQ_CHECKPOINT_DB:-${DISRUPTRON_ROOT}/checkpoints.db}

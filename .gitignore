@@ -2,17 +2,40 @@
 **/.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+*.egg-info/
 
 # Secrets
 .env
 **/.env
+gcp-oauth.keys.json
 
-# Disruptron Telegram runtime state
+# Disruptron delivery runtime state
 features/delivery/telegram-bot/data/subscriptions.json
 
 # Web frontend
 features/delivery/web/node_modules/
 features/delivery/web/dist/
+features/delivery/web/.vite/
 
 # Large generated caches (keep source xlsx + csv)
 data/*.zip
+
+# Runtime logs & agent state
+logs/
+checkpoints.db
+checkpoints.db-shm
+checkpoints.db-wal
+*.log
+
+# NemoClaw generated analysis (keep CONTEXT.md locally; ignore heavy snapshots)
+nemoclaw/workspace/analysis/snapshots/*
+!nemoclaw/workspace/analysis/snapshots/.gitkeep
+nemoclaw/workspace/analysis/reports/*
+!nemoclaw/workspace/analysis/reports/.gitkeep
+nemoclaw/workspace/analysis/metrics/*.json
+!nemoclaw/workspace/analysis/metrics/.gitkeep
+nemoclaw/workspace/memory/
+
+# OpenClaw local state (outside repo, but ignore if symlinked)
+.openclaw/

@@ -16,13 +16,23 @@ Get a free TfL API key: https://api-portal.tfl.gov.uk/
 from __future__ import annotations
 
 import os
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root (shared symlink)
+
+from shared.tfl_client import (  # noqa: E402
+    fetch_ev_charge_summary,
+    fetch_london_traffic_snapshot,
+    fetch_parking_and_charging_snapshot,
+)
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -41,7 +51,9 @@ mcp = FastMCP(
         "Tube/Overground/DLR: use get_line_status, get_line_disruptions. "
         "Road traffic & street works: get_all_road_status (congestion), get_street_disruptions (closures), "
         "get_all_road_disruptions, get_road_status, get_road_disruptions. "
-        "Quick overview: get_london_traffic_snapshot. "
+        "EV charging: get_parking_and_charging_snapshot, get_ev_charge_summary, get_ev_charge_connectors. "
+        "Car parks: list_tfl_car_parks, get_car_park_detail, get_stop_car_parks (live bays often HTTP 500). "
+        "Quick overview: get_london_traffic_snapshot (includes EV + car parks). "
         "Line IDs: victoria, jubilee, northern, elizabeth. Road IDs: a1, a2, a3, a406, inner ring."
     ),
 )
@@ -525,64 +537,11 @@ async def get_all_road_disruptions(
 
 @mcp.tool()
 async def get_london_traffic_snapshot() -> dict:
-    """One-call London transport + road traffic overview for agents.
+    """One-call London transport, road traffic, EV charging, and car park overview.
 
-    Combines: Tube status, active tube disruptions, road corridor status,
-    and top road disruptions (no API key required).
+    Combines: Tube, roads, streets, live EV connectors, car park directory.
     """
-    tube_status = await _tfl_get("/Line/Mode/tube/Status")
-    tube_disruptions = await _tfl_get("/Line/Mode/tube/Disruption")
-    road_status = await _tfl_get("/Road/all/Status")
-    all_road = await _tfl_get("/Road/all/Disruption")
-    start_date, end_date = _today_utc_range()
-    street_disruptions = await _tfl_get(
-        "/Road/all/Street/Disruption",
-        {"startDate": start_date, "endDate": end_date},
-    )
-
-    not_good = [
-        {
-            "line": line.get("name"),
-            "status": (line.get("lineStatuses") or [{}])[0].get("statusSeverityDescription"),
-        }
-        for line in tube_status
-        if (line.get("lineStatuses") or [{}])[0].get("statusSeverityDescription") != "Good Service"
-    ]
-
-    road_issues = [
-        _slim_road_disruption(d)
-        for d in all_road
-        if d.get("severity") not in (None, "Minimal") or d.get("hasClosures")
-    ][:10]
-
-    congested = [s for s in [_slim_road_status(r) for r in road_status] if _is_congested(s)]
-    closed_streets = [
-        _slim_street_disruption(s)
-        for s in street_disruptions
-        if (s.get("closure") or "").lower() not in ("open", "")
-    ][:10]
-
-    return {
-        "tube": {
-            "lines_not_good_service": not_good,
-            "active_disruption_count": len(tube_disruptions),
-            "disruption_summaries": [d.get("description") for d in tube_disruptions[:5]],
-        },
-        "roads": {
-            "congested_corridors": congested,
-            "congested_corridor_count": len(congested),
-            "all_corridor_status": [_slim_road_status(r) for r in road_status],
-            "serious_disruption_count": len(road_issues),
-            "top_disruptions": road_issues,
-            "total_active_disruptions": len(all_road),
-        },
-        "streets": {
-            "total_disrupted_segments": len(street_disruptions),
-            "closed_or_restricted_count": len(closed_streets),
-            "top_closed_streets": closed_streets,
-        },
-        "fetched_at": tube_status[0].get("lineStatuses", [{}])[0].get("validTo") if tube_status else None,
-    }
+    return await fetch_london_traffic_snapshot()
 
 
 @mcp.tool()
@@ -642,6 +601,221 @@ async def get_mode_arrivals(mode: str = "tube", limit: int = 20) -> list[dict]:
             }
         )
     return slim
+
+
+def _place_props(place: dict) -> dict[str, str]:
+    return {
+        ap.get("key"): ap.get("value")
+        for ap in place.get("additionalProperties") or []
+        if ap.get("key") and ap.get("value") is not None
+    }
+
+
+def _slim_car_park(place: dict) -> dict:
+    props = _place_props(place)
+    return {
+        "id": place.get("id"),
+        "name": place.get("commonName"),
+        "lat": place.get("lat"),
+        "lon": place.get("lon"),
+        "distance_metres": place.get("distance"),
+        "address": ", ".join(v for k, v in props.items() if k.startswith("Address") and v),
+        "postcode": props.get("PostCode"),
+        "spaces": props.get("NumberOfSpaces") or props.get("TotalSpaces") or props.get("Spaces"),
+        "disabled_bays": props.get("NumberOfDisabledBays"),
+        "opening_hours": props.get("OpeningHours"),
+        "open": props.get("Open"),
+        "station_atco_code": props.get("StationAtcoCode"),
+        "smartParkingCode": props.get("SmartParkingLocationCode"),
+        "daily_tariff_cash": props.get("StandardTariffsCashDaily"),
+        "has_ev_charging": props.get("CarElectricalChargingPoints"),
+    }
+
+
+def _slim_charge_connector(item: dict) -> dict:
+    return {
+        "id": item.get("id"),
+        "sourceSystemPlaceId": item.get("sourceSystemPlaceId"),
+        "status": item.get("status"),
+    }
+
+
+@mcp.tool()
+async def get_parking_and_charging_snapshot() -> dict:
+    """One-call live EV charging + TfL car park directory overview.
+
+    EV connectors: live via GET /Occupancy/ChargeConnector.
+    Car parks: static metadata via GET /Place/Type/CarPark (live bay occupancy API currently HTTP 500).
+    """
+    return await fetch_parking_and_charging_snapshot()
+
+
+@mcp.tool()
+async def get_ev_charge_summary() -> dict:
+    """Live summary of TfL EV charge connector availability across London.
+
+    Implements GET /Occupancy/ChargeConnector (~349 connectors live).
+    """
+    return await fetch_ev_charge_summary()
+
+
+@mcp.tool()
+async def get_ev_charge_connectors(
+    status: str | None = None,
+    limit: int = 25,
+) -> dict:
+    """Get live EV charge connector occupancy (available / charging / out of service).
+
+    Implements GET /Occupancy/ChargeConnector and optional filter by status.
+
+    Args:
+        status: Optional filter: Available, Charging, OutOfService, Unknown.
+        limit: Max connectors to return (default 25).
+    """
+    data = await _tfl_get("/Occupancy/ChargeConnector")
+    if status:
+        data = [c for c in data if (c.get("status") or "").lower() == status.lower()]
+    slim = [_slim_charge_connector(c) for c in data[: max(1, limit)]]
+    return {
+        "total_matching": len(data),
+        "returned": len(slim),
+        "connectors": slim,
+    }
+
+
+@mcp.tool()
+async def get_ev_charge_connector(source_system_place_id: str) -> list[dict]:
+    """Get live status for specific EV charge connector(s) by sourceSystemPlaceId.
+
+    Implements GET /Occupancy/ChargeConnector/{ids}
+
+    Args:
+        source_system_place_id: e.g. 'ChargePointESB-UT06EL-3' (comma-separated for multiple).
+    """
+    if not source_system_place_id or not source_system_place_id.strip():
+        raise ValueError("source_system_place_id is required")
+    data = await _tfl_get(f"/Occupancy/ChargeConnector/{source_system_place_id.strip()}")
+    if isinstance(data, dict):
+        data = [data]
+    return [_slim_charge_connector(c) for c in data]
+
+
+@mcp.tool()
+async def list_tfl_car_parks(limit: int = 25, name_hint: str | None = None) -> dict:
+    """List TfL car parks with static metadata (name, address, capacity).
+
+    Implements GET /Place/Type/CarPark (58 parks).
+
+    Note: Live bay occupancy via GET /Occupancy/CarPark is currently returning HTTP 500
+    from TfL — use this for locations/metadata only until that feed is restored.
+
+    Args:
+        limit: Max car parks to return.
+        name_hint: Optional filter on car park name (e.g. 'Greenford').
+    """
+    places = await _tfl_get("/Place/Type/CarPark")
+    if name_hint:
+        hint = name_hint.lower()
+        places = [p for p in places if hint in (p.get("commonName") or "").lower()]
+    slim = [_slim_car_park(p) for p in places[: max(1, limit)]]
+    return {
+        "total_car_parks": len(places),
+        "returned": len(slim),
+        "live_occupancy_api_status": "unavailable (TfL /Occupancy/CarPark returns HTTP 500 as of 2026-06)",
+        "car_parks": slim,
+    }
+
+
+@mcp.tool()
+async def get_car_park_occupancy(car_park_id: str) -> dict:
+    """Attempt live car park occupancy for a given TfL car park ID.
+
+    Implements GET /Occupancy/CarPark/{id}
+
+    Args:
+        car_park_id: Place ID (e.g. 'CarParks_800444') or SmartParkingLocationCode.
+
+    Note: TfL's occupancy feed frequently returns HTTP 500. On failure, returns
+    static metadata from GET /Place/{id} when available.
+    """
+    if not car_park_id or not car_park_id.strip():
+        raise ValueError("car_park_id is required")
+    cid = car_park_id.strip()
+    try:
+        occ = await _tfl_get(f"/Occupancy/CarPark/{cid}")
+        return {"car_park_id": cid, "occupancy": occ, "source": "live"}
+    except httpx.HTTPStatusError as exc:
+        place_id = cid if cid.startswith("CarParks_") else None
+        fallback = None
+        if place_id:
+            try:
+                fallback = _slim_car_park(await _tfl_get(f"/Place/{place_id}"))
+            except httpx.HTTPStatusError:
+                fallback = None
+        return {
+            "car_park_id": cid,
+            "occupancy": None,
+            "source": "unavailable",
+            "tfl_error": exc.response.status_code,
+            "message": "TfL /Occupancy/CarPark is currently failing — metadata only.",
+            "metadata": fallback,
+        }
+
+
+@mcp.tool()
+async def get_car_park_detail(car_park_id: str) -> dict:
+    """Get full TfL car park metadata (capacity, tariffs, hours, station link).
+
+    Implements GET /Place/{id} (e.g. CarParks_800444).
+
+    Args:
+        car_park_id: Place ID from list_tfl_car_parks or get_stop_car_parks.
+    """
+    if not car_park_id or not car_park_id.strip():
+        raise ValueError("car_park_id is required")
+    place = await _tfl_get(f"/Place/{car_park_id.strip()}")
+    detail = _slim_car_park(place)
+    detail["occupancy_live"] = None
+    try:
+        detail["occupancy_live"] = await _tfl_get(f"/Occupancy/CarPark/{car_park_id.strip()}")
+        detail["occupancy_source"] = "live"
+    except httpx.HTTPStatusError as exc:
+        detail["occupancy_source"] = "unavailable"
+        detail["occupancy_error"] = exc.response.status_code
+    return detail
+
+
+@mcp.tool()
+async def get_stop_car_parks(stop_id: str, try_live_occupancy: bool = False) -> dict:
+    """Get car parks linked to a TfL stop/station.
+
+    Implements GET /StopPoint/{id}/CarParks
+
+    Args:
+        stop_id: Naptan ID (e.g. '940GZZLUGFD' for Greenford) — hub IDs may return empty.
+        try_live_occupancy: If True, attempt GET /Occupancy/CarPark/{id} per park (often HTTP 500).
+    """
+    if not stop_id or not stop_id.strip():
+        raise ValueError("stop_id is required")
+    sid = stop_id.strip()
+    parks = await _tfl_get(f"/StopPoint/{sid}/CarParks")
+    results = []
+    for park in parks:
+        slim = _slim_car_park(park)
+        if try_live_occupancy and park.get("id"):
+            try:
+                slim["occupancy_live"] = await _tfl_get(f"/Occupancy/CarPark/{park['id']}")
+                slim["occupancy_source"] = "live"
+            except httpx.HTTPStatusError as exc:
+                slim["occupancy_source"] = "unavailable"
+                slim["occupancy_error"] = exc.response.status_code
+        results.append(slim)
+    return {
+        "stop_id": sid,
+        "car_park_count": len(results),
+        "car_parks": results,
+        "hint": "Use Naptan ID (940GZZLUxxx) if hub ID returns empty.",
+    }
 
 
 @mcp.tool()
