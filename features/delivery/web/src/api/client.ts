@@ -1,5 +1,5 @@
 import { getApiConfig } from "./config";
-import type { ChatRequest, ChatResponse, HealthResponse } from "./types";
+import type { ChatRequest, ChatResponse, HealthResponse, TranscribeResponse } from "./types";
 
 export class DisruptronApiClient {
   private config = getApiConfig();
@@ -31,6 +31,19 @@ export class DisruptronApiClient {
         user_id: body.user_id ?? this.config.userId,
       }),
     });
+  }
+
+  async transcribe(audio: Blob, filename = "recording.webm"): Promise<TranscribeResponse> {
+    const form = new FormData();
+    form.append("audio", audio, filename);
+    const response = await fetch(`${this.config.baseUrl}/v1/transcribe`, {
+      method: "POST",
+      body: form,
+    });
+    if (!response.ok) {
+      throw new Error(`Transcription failed (${response.status})`);
+    }
+    return response.json() as Promise<TranscribeResponse>;
   }
 }
 

@@ -1,7 +1,10 @@
 import { Bell } from "@deemlol/next-icons";
 import { Tab, Tabs } from "@nextui-org/react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NotificationSimulator } from "@/components/notifications/NotificationSimulator";
+import { NotificationToasts } from "@/components/notifications/NotificationToasts";
 import { GradientBackground } from "@/components/visuals/GradientBackground";
+import { isDemoEnabled } from "@/config/demo";
 
 const tabs = [
   { key: "/", label: "Live" },
@@ -16,6 +19,8 @@ export function AppShell() {
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden">
       <GradientBackground />
+      <NotificationToasts />
+      {isDemoEnabled() ? <NotificationSimulator /> : null}
 
       <header className="relative z-10 shrink-0 border-b border-white/60 bg-white/75 backdrop-blur-md px-4 py-3">
         <p className="text-center text-xs uppercase tracking-[0.2em] text-cyan-600 mb-2">

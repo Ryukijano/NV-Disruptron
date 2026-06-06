@@ -1,5 +1,6 @@
 import { NextUIProvider } from "@nextui-org/react";
 import { BrowserRouter } from "react-router-dom";
+import { AgentUiProvider } from "@/providers/AgentUiProvider";
 import { ApiProvider } from "@/providers/ApiProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
 import { SubscriptionsProvider } from "@/providers/SubscriptionsProvider";
@@ -13,9 +14,11 @@ export default function App() {
         <SummariesProvider>
           <NotificationsProvider>
             <SubscriptionsProvider>
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
+              <AgentUiProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </AgentUiProvider>
             </SubscriptionsProvider>
           </NotificationsProvider>
         </SummariesProvider>

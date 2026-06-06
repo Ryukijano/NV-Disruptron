@@ -19,6 +19,14 @@ class _FakeDelivery:
         self.sent.append((chat_id, text))
 
 
+class _FakeTranscribe:
+    async def transcribe(self, audio: bytes, filename: str, content_type: str) -> str:
+        del filename, content_type
+        if not audio:
+            return "Speech transcription is temporarily unavailable."
+        return "central line delayed"
+
+
 @pytest.fixture
 def store(tmp_path: Path) -> SubscriptionStore:
     return SubscriptionStore(tmp_path / "subscriptions.json")
@@ -35,6 +43,12 @@ def settings(tmp_path: Path) -> ApiSettings:
         backend_url="http://127.0.0.1:18789",
         backend_chat_path="/v1/chat",
         backend_timeout_s=30.0,
+        stt_engine="off",
+        stt_url="http://127.0.0.1:8000/v1/audio/transcriptions",
+        stt_model="whisper-1",
+        stt_device="cpu",
+        stt_compute_type="int8",
+        stt_timeout_s=30.0,
         cors_origins=("http://localhost:5173",),
     )
 
@@ -73,6 +87,17 @@ def test_push_requires_secret(settings: ApiSettings, store: SubscriptionStore) -
     delivery = _FakeDelivery()
     client = TestClient(create_app(settings, store, delivery))
     assert client.post("/v1/push/daily", json={"message": "Plan"}).status_code == 401
+
+
+def test_transcribe_endpoint(settings: ApiSettings, store: SubscriptionStore) -> None:
+    delivery = _FakeDelivery()
+    client = TestClient(create_app(settings, store, delivery, transcribe=_FakeTranscribe()))
+    response = client.post(
+        "/v1/transcribe",
+        files={"audio": ("clip.webm", b"fake-audio", "audio/webm")},
+    )
+    assert response.status_code == 200
+    assert response.json()["text"] == "central line delayed"
 
 
 def test_subscription_persistence(tmp_path: Path) -> None:

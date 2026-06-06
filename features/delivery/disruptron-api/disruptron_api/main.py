@@ -8,6 +8,7 @@ from disruptron_api.backend.chat import ChatProxy
 from disruptron_api.config import ApiSettings
 from disruptron_api.delivery.telegram import TelegramDelivery
 from disruptron_api.gateway import create_app
+from disruptron_api.stt_factory import build_transcribe_engine
 from disruptron_api.subscriptions import SubscriptionStore
 
 logging.basicConfig(
@@ -26,7 +27,8 @@ def run() -> None:
         settings.backend_chat_path,
         settings.backend_timeout_s,
     )
-    app = create_app(settings, store, delivery, chat)
+    transcribe = build_transcribe_engine(settings)
+    app = create_app(settings, store, delivery, chat, transcribe)
 
     logger.info(
         "NV Disruptron outputs API listening on %s:%s",

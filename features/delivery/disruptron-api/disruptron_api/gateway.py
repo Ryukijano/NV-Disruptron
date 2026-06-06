@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 from typing import Protocol
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from disruptron_api.backend.chat import ChatProxy, WebChatRequest, WebChatResponse
+from disruptron_api.backend.transcribe import STT_UNAVAILABLE, TranscribeEngine
 from disruptron_api.config import ApiSettings
 from disruptron_api.subscriptions import SubscriptionStore
 
@@ -33,6 +34,10 @@ class PushResponse(BaseModel):
     targets: list[int]
 
 
+class TranscribeResponse(BaseModel):
+    text: str
+
+
 def _check_secret(settings: ApiSettings, authorization: str | None, x_push_secret: str | None) -> None:
     secret = settings.push_secret
     if not secret:
@@ -51,6 +56,7 @@ def create_app(
     store: SubscriptionStore,
     delivery: MessageDelivery,
     chat: ChatProxy | None = None,
+    transcribe: TranscribeEngine | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="NV Disruptron Outputs API",
@@ -132,5 +138,23 @@ def create_app(
         if chat is None:
             raise HTTPException(status_code=503, detail="Chat proxy not configured")
         return await chat.ask(body)
+
+    @app.post("/v1/transcribe", response_model=TranscribeResponse)
+    async def transcribe_audio(
+        audio: UploadFile = File(...),
+    ) -> TranscribeResponse:
+        if transcribe is None:
+            raise HTTPException(status_code=503, detail="Speech transcription not configured")
+        payload = await audio.read()
+        if not payload:
+            raise HTTPException(status_code=400, detail="Empty audio payload")
+        text = await transcribe.transcribe(
+            payload,
+            audio.filename or "audio.webm",
+            audio.content_type or "application/octet-stream",
+        )
+        if text == STT_UNAVAILABLE:
+            raise HTTPException(status_code=503, detail=STT_UNAVAILABLE)
+        return TranscribeResponse(text=text)
 
     return app

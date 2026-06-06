@@ -27,6 +27,12 @@ class ApiSettings:
     backend_url: str
     backend_chat_path: str
     backend_timeout_s: float
+    stt_engine: str
+    stt_url: str
+    stt_model: str
+    stt_device: str
+    stt_compute_type: str
+    stt_timeout_s: float
     cors_origins: tuple[str, ...]
 
     @classmethod
@@ -54,5 +60,14 @@ class ApiSettings:
             backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:18789").rstrip("/"),
             backend_chat_path=os.getenv("DISRUPTRON_BACKEND_CHAT_PATH", "/v1/chat"),
             backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "300")),
+            stt_engine=os.getenv("DISRUPTRON_STT_ENGINE", "proxy").strip().lower(),
+            stt_url=os.getenv(
+                "DISRUPTRON_STT_URL",
+                "http://127.0.0.1:8000/v1/audio/transcriptions",
+            ).rstrip("/"),
+            stt_model=os.getenv("DISRUPTRON_STT_MODEL", "whisper-1").strip(),
+            stt_device=os.getenv("DISRUPTRON_STT_DEVICE", "cuda").strip(),
+            stt_compute_type=os.getenv("DISRUPTRON_STT_COMPUTE_TYPE", "float16").strip(),
+            stt_timeout_s=float(os.getenv("DISRUPTRON_STT_TIMEOUT_S", "120")),
             cors_origins=tuple(_parse_cors_origins(os.getenv("DISRUPTRON_CORS_ORIGINS"))),
         )

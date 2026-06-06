@@ -1,5 +1,14 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_ENABLE_DEMO?: string;
+  readonly VITE_STT_MODE?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;

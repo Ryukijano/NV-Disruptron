@@ -1,17 +1,32 @@
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { ChatLine } from "@/hooks/useLiveSession";
+import type { LiveSessionState } from "@/types/live";
+import { AgentActivityIndicator } from "./AgentActivityIndicator";
+import { UserListeningIndicator } from "./UserListeningIndicator";
 
 type ChatBoxProps = {
   lines: ChatLine[];
-  thinking: boolean;
+  state: LiveSessionState;
+  userListening?: boolean;
+  userTranscribing?: boolean;
+  userInterim?: string;
 };
 
-export function ChatBox({ lines, thinking }: ChatBoxProps) {
+export function ChatBox({
+  lines,
+  state,
+  userListening,
+  userTranscribing,
+  userInterim,
+}: ChatBoxProps) {
   const endRef = useRef<HTMLDivElement>(null);
+  const agentActive = state === "thinking" || state === "speaking";
+  const userActive = Boolean(userListening || userTranscribing);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [lines, thinking]);
+  }, [lines, agentActive, userActive, userInterim]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col rounded-2xl border-2 border-white/80 bg-white shadow-lg overflow-hidden ring-1 ring-slate-200/60">
@@ -19,7 +34,7 @@ export function ChatBox({ lines, thinking }: ChatBoxProps) {
         Live chat
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-white">
-        {lines.length === 0 ? (
+        {lines.length === 0 && !agentActive && !userActive ? (
           <p className="text-sm text-slate-400 text-center py-8">
             Ask about London transport — tube, roads, charging, or ward impact.
           </p>
@@ -44,9 +59,18 @@ export function ChatBox({ lines, thinking }: ChatBoxProps) {
             </div>
           ))
         )}
-        {thinking ? (
-          <p className="text-xs text-slate-400 animate-pulse">Agent is thinking…</p>
-        ) : null}
+        <AnimatePresence>
+          {userActive ? (
+            <UserListeningIndicator
+              key="user-listening"
+              interim={userInterim}
+              transcribing={userTranscribing}
+            />
+          ) : null}
+          {state === "thinking" || state === "speaking" ? (
+            <AgentActivityIndicator key={state} state={state} />
+          ) : null}
+        </AnimatePresence>
         <div ref={endRef} />
       </div>
     </div>
