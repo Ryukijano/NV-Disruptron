@@ -110,7 +110,7 @@ EOF
   fi
 
   echo "==> Recover sandbox gateway"
-  nemoclaw "$name" recover
+  _disruptron_nemoclaw_recover "$name"
 
   if [[ "$install_cf" -eq 1 ]]; then
     echo "==> cloudflared"
@@ -193,6 +193,7 @@ EOF
 
       echo ""
       echo "NemoClaw sandbox '${name}' ready."
+      _disruptron_nemoclaw_recover "$name" || true
       disruptron_cmd_nemoclaw url --name "$name" 2>/dev/null || true
       ;;
     url)
@@ -234,6 +235,11 @@ EOF
     policy-setup)
       _disruptron_nemoclaw_policy_setup "$@"
       ;;
+    recover)
+      _disruptron_require_nemoclaw || return 1
+      local name="${1:-$(_disruptron_nemoclaw_sandbox_name)}"
+      _disruptron_nemoclaw_recover "$name"
+      ;;
     -h|help|*)
       cat <<EOF
 Usage: disruptron nemoclaw <subcommand>
@@ -243,6 +249,7 @@ Usage: disruptron nemoclaw <subcommand>
 Subcommands:
   onboard [--name disruptron]   vLLM + OpenClaw profile + nemoclaw onboard
   policy-setup [--tunnel]       Spark playbook: Telegram egress + recover (+ optional tunnel)
+  recover [sandbox]             Restart gateway + ensure Google Calendar MCP
   profile                       Reasoning-enabled OpenClaw config only (no sandbox)
   url [--name disruptron]       Dashboard URL + gateway token
   status [sandbox]              Sandbox + vLLM health

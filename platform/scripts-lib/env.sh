@@ -34,6 +34,8 @@ if [[ -f "$DISRUPTRON_ROOT/.env" ]]; then
   set -a && source "$DISRUPTRON_ROOT/.env" && set +a
 fi
 
-export VLLM_MULTIMODAL="${VLLM_MULTIMODAL:-0}"
+export DISRUPTRON_GOOGLE_CALENDAR="${DISRUPTRON_GOOGLE_CALENDAR:-1}"
+export GOOGLE_CALENDAR_MCP_DIR="${GOOGLE_CALENDAR_MCP_DIR:-$HOME/google-calendar-mcp}"
+export GOOGLE_CALENDAR_MCP_PORT="${GOOGLE_CALENDAR_MCP_PORT:-3000}"
 export VLLM_IMAGE="${VLLM_IMAGE:-vllm/vllm-openai:v0.20.0-aarch64-cu130-ubuntu2404}"
 export VLLM_MEDIA_DIR="${VLLM_MEDIA_DIR:-/tmp/disruptron-media}"

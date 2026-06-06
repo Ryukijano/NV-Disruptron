@@ -14,6 +14,8 @@ source "$_DISRUPTRON_LIB/lib/vllm.sh"
 source "$_DISRUPTRON_LIB/lib/research.sh"
 # shellcheck source=../platform/scripts-lib/lib/configure.sh
 source "$_DISRUPTRON_LIB/lib/configure.sh"
+# shellcheck source=../platform/scripts-lib/lib/calendar.sh
+source "$_DISRUPTRON_LIB/lib/calendar.sh"
 # shellcheck source=../platform/scripts-lib/lib/observability.sh
 source "$_DISRUPTRON_LIB/lib/observability.sh"
 # shellcheck source=../platform/scripts-lib/lib/test.sh
@@ -42,7 +44,8 @@ Agent:
   run [opts]          Interactive TUI (--channels for Telegram)
   query <text>        One-shot query
   configure [--channels]   Register MCP + OpenClaw agent + TTS
-  nemoclaw onboard|profile|policy-setup|url|status   NVIDIA NemoClaw + Nemotron Omni
+  nemoclaw onboard|profile|policy-setup|recover|url|status   NVIDIA NemoClaw + Nemotron Omni
+  calendar start|stop|ensure|status   Google Calendar MCP (host :3000)
 
 Infrastructure:
   vllm [--recreate] [--llama]   Start Nemotron on :8000
@@ -84,6 +87,7 @@ main() {
     setup) disruptron_cmd_setup "$@" ;;
     context) disruptron_cmd_context "$@" ;;
     nemoclaw) disruptron_cmd_nemoclaw "$@" ;;
+    calendar) disruptron_cmd_calendar "$@" ;;
     elevenlabs) disruptron_cmd_elevenlabs "$@" ;;
     install) disruptron_cmd_install "$@" ;;
     *)

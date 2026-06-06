@@ -374,6 +374,10 @@ PY
     _disruptron_configure_channels
   fi
 
+  if [[ "${DISRUPTRON_GOOGLE_CALENDAR:-1}" != "0" ]]; then
+    _disruptron_calendar_ensure 0 || true
+  fi
+
   openclaw mcp list 2>/dev/null || true
   echo "Done. Restart gateway: openclaw gateway restart"
 }
