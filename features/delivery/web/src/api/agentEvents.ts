@@ -1,11 +1,30 @@
+import { getStoredSessionId } from "./session";
 import type { AgentEvent } from "./types";
 
 export type AgentEventsHandler = (event: AgentEvent) => void;
 
-export function subscribeAgentEvents(_onEvent: AgentEventsHandler): () => void {
-  // Stub: wire to backend push/SSE when disruptron-api exposes agent events.
-  // Example future shape:
-  //   GET /v1/events/stream  (SSE)
-  //   or WebSocket /v1/events
-  return () => {};
+export function subscribeAgentEvents(onEvent: AgentEventsHandler): () => void {
+  const sessionId = getStoredSessionId();
+  if (!sessionId) return () => {};
+
+  const url = `/api/v1/events/stream?session_id=${encodeURIComponent(sessionId)}`;
+  const source = new EventSource(url);
+
+  source.onmessage = (message) => {
+    try {
+      const data = JSON.parse(message.data) as AgentEvent & { type?: string };
+      if (data.type === "connected") return;
+      onEvent({
+        id: data.id,
+        title: data.title,
+        body: data.body,
+        timestamp: data.timestamp,
+        kind: data.kind,
+      });
+    } catch {
+      // Ignore malformed events.
+    }
+  };
+
+  return () => source.close();
 }

@@ -3,10 +3,10 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
-import { loadSubscriptionPrefs, syncSubscriptionPrefs } from "@/api/subscriptions";
+import { useApi } from "@/providers/ApiProvider";
+import { useSession } from "@/providers/SessionProvider";
 import type { SubscriptionPrefs } from "@/types/live";
 
 type SubscriptionsContextValue = {
@@ -18,26 +18,34 @@ type SubscriptionsContextValue = {
 const SubscriptionsContext = createContext<SubscriptionsContextValue | null>(null);
 
 export function SubscriptionsProvider({ children }: { children: ReactNode }) {
-  const [prefs, setPrefs] = useState<SubscriptionPrefs>(() => loadSubscriptionPrefs());
+  const client = useApi();
+  const { subscriptions, setSubscriptions } = useSession();
 
-  const apply = useCallback(async (next: SubscriptionPrefs) => {
-    setPrefs(next);
-    await syncSubscriptionPrefs(next);
-  }, []);
+  const apply = useCallback(
+    async (next: SubscriptionPrefs) => {
+      setSubscriptions(next);
+      try {
+        await client.putWebSubscriptions({ alerts: next.alerts, daily: next.daily });
+      } catch {
+        // Server sync failed; local session state still updated.
+      }
+    },
+    [client, setSubscriptions],
+  );
 
   const setAlerts = useCallback(
-    (enabled: boolean) => apply({ ...prefs, alerts: enabled }),
-    [apply, prefs],
+    (enabled: boolean) => apply({ ...subscriptions, alerts: enabled }),
+    [apply, subscriptions],
   );
 
   const setDaily = useCallback(
-    (enabled: boolean) => apply({ ...prefs, daily: enabled }),
-    [apply, prefs],
+    (enabled: boolean) => apply({ ...subscriptions, daily: enabled }),
+    [apply, subscriptions],
   );
 
   const value = useMemo(
-    () => ({ prefs, setAlerts, setDaily }),
-    [prefs, setAlerts, setDaily],
+    () => ({ prefs: subscriptions, setAlerts, setDaily }),
+    [subscriptions, setAlerts, setDaily],
   );
 
   return (

@@ -4,4 +4,4 @@ export * from "./client";
 export * from "./agentEvents";
 export * from "./agentUi";
 export * from "./agentUiSamples";
-export * from "./subscriptions";
+export * from "./session";

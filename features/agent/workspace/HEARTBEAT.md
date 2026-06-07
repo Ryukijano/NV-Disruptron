@@ -2,6 +2,7 @@
 
 Run on every automated heartbeat (~10 minutes):
 
+0. If **google-calendar MCP** is healthy, note upcoming events in the next 4 hours (titles only — never speak private details aloud; see VOICE.md).
 1. Read **USER.md** (mobility profile — do not repeat private fields aloud)
 2. Call `disruptron_ops__get_london_city_briefing`
 3. If user has EV (`USER.md` → `ev.enabled`):

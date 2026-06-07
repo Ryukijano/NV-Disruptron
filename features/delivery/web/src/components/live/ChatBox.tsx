@@ -8,6 +8,7 @@ import { UserListeningIndicator } from "./UserListeningIndicator";
 type ChatBoxProps = {
   lines: ChatLine[];
   state: LiveSessionState;
+  statusText?: string | null;
   userListening?: boolean;
   userTranscribing?: boolean;
   userInterim?: string;
@@ -16,6 +17,7 @@ type ChatBoxProps = {
 export function ChatBox({
   lines,
   state,
+  statusText,
   userListening,
   userTranscribing,
   userInterim,
@@ -68,7 +70,7 @@ export function ChatBox({
             />
           ) : null}
           {state === "thinking" || state === "speaking" ? (
-            <AgentActivityIndicator key={state} state={state} />
+            <AgentActivityIndicator key={state} state={state} statusText={statusText} />
           ) : null}
         </AnimatePresence>
         <div ref={endRef} />

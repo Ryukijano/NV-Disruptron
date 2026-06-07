@@ -13,7 +13,7 @@ _SHARED = REPO_ROOT / "platform" / "shared"
 if str(_SHARED) not in sys.path:
     sys.path.insert(0, str(_SHARED))
 
-from context_store import ContextStore  # noqa: E402
+from context_store import ContextStore, conversation_id  # noqa: E402
 
 _DEFAULT_DB = REPO_ROOT / "data" / "disruptron_context.db"
 _store: ContextStore | None = None
@@ -49,3 +49,19 @@ def record_assistant_message(channel: str, chat_id: str | int, text: str) -> Non
         )
     except Exception:
         logger.exception("context store: failed to record assistant message")
+
+
+def list_web_messages(session_id: str, *, limit: int = 100) -> list[dict[str, object]]:
+    cid = conversation_id("web", session_id)
+    store = get_context_store()
+    messages = store.list_messages(cid, limit=limit)
+    return [
+        {
+            "id": str(msg.id),
+            "role": msg.role,
+            "text": msg.content,
+            "created_at": msg.created_at,
+        }
+        for msg in messages
+        if msg.role in {"user", "assistant"} and msg.content.strip()
+    ]

@@ -2,26 +2,15 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
+import { useApi } from "@/providers/ApiProvider";
+import { useSession } from "@/providers/SessionProvider";
 import type { DailySummary } from "@/types/live";
-
-const STORAGE_KEY = "disruptron.summaries";
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function loadSummaries(): DailySummary[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as DailySummary[]) : [];
-  } catch {
-    return [];
-  }
 }
 
 type SummariesContextValue = {
@@ -32,25 +21,26 @@ type SummariesContextValue = {
 const SummariesContext = createContext<SummariesContextValue | null>(null);
 
 export function SummariesProvider({ children }: { children: ReactNode }) {
-  const [summaries, setSummaries] = useState<DailySummary[]>(() => loadSummaries());
+  const client = useApi();
+  const { summaries, setSummaries } = useSession();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(summaries));
-  }, [summaries]);
-
-  const saveForToday = useCallback((title: string, body: string) => {
-    const date = todayKey();
-    const entry: DailySummary = {
-      date,
-      title,
-      body,
-      updatedAt: Date.now(),
-    };
-    setSummaries((prev) => {
-      const rest = prev.filter((s) => s.date !== date);
-      return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));
-    });
-  }, []);
+  const saveForToday = useCallback(
+    (title: string, body: string) => {
+      const date = todayKey();
+      const entry: DailySummary = {
+        date,
+        title,
+        body,
+        updatedAt: Date.now(),
+      };
+      setSummaries((prev) => {
+        const rest = prev.filter((s) => s.date !== date);
+        return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));
+      });
+      void client.putWebSummary({ date, title, body }).catch(() => {});
+    },
+    [client, setSummaries],
+  );
 
   const value = useMemo(() => ({ summaries, saveForToday }), [summaries, saveForToday]);
 

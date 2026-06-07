@@ -1,0 +1,17 @@
+{
+  "subscribers": [
+    {
+      "session_id": "web-test",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-06T23:52:27.382395+00:00"
+    },
+    {
+      "session_id": "web-838a434a",
+      "alerts": true,
+      "daily": false,
+      "updated_at": "2026-06-06T23:57:43.635049+00:00"
+    }
+  ],
+  "updated_at": "2026-06-06T23:57:43.635098+00:00"
+}

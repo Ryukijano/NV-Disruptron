@@ -3,6 +3,7 @@ import type { LiveSessionState } from "@/types/live";
 
 type AgentActivityIndicatorProps = {
   state: Extract<LiveSessionState, "thinking" | "speaking">;
+  statusText?: string | null;
 };
 
 const copy = {
@@ -62,8 +63,8 @@ function NeuralOrb({ active }: { active: boolean }) {
   );
 }
 
-export function AgentActivityIndicator({ state }: AgentActivityIndicatorProps) {
-  const label = copy[state];
+export function AgentActivityIndicator({ state, statusText }: AgentActivityIndicatorProps) {
+  const label = statusText?.trim() || copy[state];
 
   return (
     <motion.div

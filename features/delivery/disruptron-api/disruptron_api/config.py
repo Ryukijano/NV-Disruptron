@@ -10,6 +10,9 @@ PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 REPO_ROOT = PACKAGE_ROOT.parents[2]
 VALID_CHAT_MODES = frozenset({"auto", "http", "agent"})
 DEFAULT_SUBSCRIPTIONS = PACKAGE_ROOT.parent / "telegram-bot" / "data" / "subscriptions.json"
+DEFAULT_WEB_SUBSCRIPTIONS = PACKAGE_ROOT / "data" / "web_subscriptions.json"
+DEFAULT_WEB_SESSION_DB = PACKAGE_ROOT / "data" / "web_session.db"
+DEFAULT_SCHEDULER_STATE = PACKAGE_ROOT / "data" / "scheduler_state.json"
 
 
 def _parse_cors_origins(raw: str | None) -> list[str]:
@@ -30,6 +33,7 @@ class ApiSettings:
     backend_timeout_s: float
     chat_mode: str
     agent_id: str
+    autonomous_agent_id: str
     stt_engine: str
     stt_url: str
     stt_model: str
@@ -37,6 +41,14 @@ class ApiSettings:
     stt_compute_type: str
     stt_timeout_s: float
     cors_origins: tuple[str, ...]
+    agent_local: bool
+    web_subscriptions_path: Path
+    scheduler_state_path: Path
+    daily_digest_hour: int
+    daily_digest_minute: int
+    scheduler_enabled: bool
+    push_port_for_guard: int
+    web_session_db_path: Path
 
     @classmethod
     def from_env(cls, env_path: Path | None = None) -> ApiSettings:
@@ -68,9 +80,10 @@ class ApiSettings:
             ),
             backend_url=os.getenv("DISRUPTRON_BACKEND_URL", "http://127.0.0.1:18789").rstrip("/"),
             backend_chat_path=os.getenv("DISRUPTRON_BACKEND_CHAT_PATH", "/v1/chat"),
-            backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "300")),
+            backend_timeout_s=float(os.getenv("DISRUPTRON_BACKEND_TIMEOUT_S", "180")),
             chat_mode=chat_mode,
             agent_id=os.getenv("DISRUPTRON_AGENT_ID", "disruptron").strip(),
+            autonomous_agent_id=os.getenv("DISRUPTRON_AUTONOMOUS_AGENT_ID", "disruptron").strip(),
             stt_engine=os.getenv("DISRUPTRON_STT_ENGINE", "proxy").strip().lower(),
             stt_url=os.getenv(
                 "DISRUPTRON_STT_URL",
@@ -81,4 +94,20 @@ class ApiSettings:
             stt_compute_type=os.getenv("DISRUPTRON_STT_COMPUTE_TYPE", "float16").strip(),
             stt_timeout_s=float(os.getenv("DISRUPTRON_STT_TIMEOUT_S", "120")),
             cors_origins=tuple(_parse_cors_origins(os.getenv("DISRUPTRON_CORS_ORIGINS"))),
+            agent_local=os.getenv("DISRUPTRON_AGENT_LOCAL", "1").strip().lower()
+            not in {"0", "false", "no"},
+            web_subscriptions_path=Path(
+                os.getenv("DISRUPTRON_WEB_SUBSCRIPTIONS_PATH", str(DEFAULT_WEB_SUBSCRIPTIONS))
+            ),
+            scheduler_state_path=Path(
+                os.getenv("DISRUPTRON_SCHEDULER_STATE_PATH", str(DEFAULT_SCHEDULER_STATE))
+            ),
+            daily_digest_hour=int(os.getenv("DISRUPTRON_DAILY_DIGEST_HOUR", "8")),
+            daily_digest_minute=int(os.getenv("DISRUPTRON_DAILY_DIGEST_MINUTE", "0")),
+            scheduler_enabled=os.getenv("DISRUPTRON_SCHEDULER_ENABLED", "1").strip().lower()
+            not in {"0", "false", "no"},
+            push_port_for_guard=int(os.getenv("DISRUPTRON_PUSH_PORT", "8010")),
+            web_session_db_path=Path(
+                os.getenv("DISRUPTRON_WEB_SESSION_DB", str(DEFAULT_WEB_SESSION_DB))
+            ),
         )

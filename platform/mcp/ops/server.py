@@ -122,7 +122,7 @@ async def get_disruptron_ops_health() -> dict:
             "max_steps_per_turn": MAX_AGENT_STEPS_PER_TURN,
             "max_same_tool_calls": MAX_SAME_TOOL_CALLS_PER_TURN,
         },
-        "tools_exposed": 12,
+        "tools_exposed": 14,
     }
 
 
@@ -160,6 +160,88 @@ def store_memory_fact(
         source_run_id=source_run_id,
     )
     return {"ok": True, "fact_id": fid}
+
+
+@mcp.tool()
+async def get_transit_route(origin: str, destination: str, mode: str = "transit") -> dict:
+    """Google Maps route between two London places (transit, driving, walking, bicycling).
+
+    Requires GOOGLE_MAPS_API_KEY in environment. Use for commute and nearest-station queries.
+    """
+    import os
+
+    import httpx
+
+    key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+    if not key:
+        return {
+            "ok": False,
+            "error": "GOOGLE_MAPS_API_KEY not configured — add to .env",
+        }
+    params = {
+        "origin": origin,
+        "destination": destination,
+        "mode": mode,
+        "key": key,
+        "region": "uk",
+    }
+    url = "https://maps.googleapis.com/maps/api/directions/json"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+    if data.get("status") != "OK":
+        return {"ok": False, "status": data.get("status"), "error": data.get("error_message")}
+    route = (data.get("routes") or [{}])[0]
+    leg = ((route.get("legs") or [{}])[0])
+    return {
+        "ok": True,
+        "summary": route.get("summary"),
+        "duration": leg.get("duration", {}).get("text"),
+        "distance": leg.get("distance", {}).get("text"),
+        "start": leg.get("start_address"),
+        "end": leg.get("end_address"),
+        "steps": [
+            {
+                "instruction": s.get("html_instructions", ""),
+                "mode": s.get("travel_mode"),
+                "duration": s.get("duration", {}).get("text"),
+            }
+            for s in (leg.get("steps") or [])[:12]
+        ],
+    }
+
+
+@mcp.tool()
+async def search_places_near(query: str, location: str = "London, UK", radius_m: int = 3000) -> dict:
+    """Search Google Places near a London location (stations, chargers, POIs).
+
+    Requires GOOGLE_MAPS_API_KEY in environment.
+    """
+    import os
+
+    import httpx
+
+    key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+    if not key:
+        return {"ok": False, "error": "GOOGLE_MAPS_API_KEY not configured"}
+    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+    params = {"query": f"{query} near {location}", "key": key, "region": "uk"}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+    results = []
+    for place in (data.get("results") or [])[:8]:
+        results.append(
+            {
+                "name": place.get("name"),
+                "address": place.get("formatted_address"),
+                "rating": place.get("rating"),
+                "types": (place.get("types") or [])[:4],
+            }
+        )
+    return {"ok": True, "count": len(results), "places": results}
 
 
 def main() -> None:

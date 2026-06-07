@@ -8,24 +8,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { showAgentUi } from "@/api/agentUi";
 import { subscribeAgentEvents } from "@/api/agentEvents";
+import { useApi } from "@/providers/ApiProvider";
+import { useSession } from "@/providers/SessionProvider";
 import type { NotificationRecord } from "@/types/live";
+import { useSummaries } from "./SummariesProvider";
 
-const STORAGE_KEY = "disruptron.notifications";
 const TOAST_MS = 6000;
 const MAX_TOASTS = 3;
 
-function loadNotifications(): NotificationRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as NotificationRecord[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 type PushOptions = {
   toast?: boolean;
+  persist?: boolean;
 };
 
 type NotificationsContextValue = {
@@ -38,13 +33,11 @@ type NotificationsContextValue = {
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<NotificationRecord[]>(() => loadNotifications());
+  const client = useApi();
+  const { saveForToday } = useSummaries();
+  const { notifications, setNotifications } = useSession();
   const [toasts, setToasts] = useState<NotificationRecord[]>([]);
   const timers = useRef<Map<string, number>>(new Map());
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, 100)));
-  }, [items]);
 
   const dismissToast = useCallback((id: string) => {
     const timer = timers.current.get(id);
@@ -58,7 +51,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback(
     (record: NotificationRecord) => {
       setToasts((prev) => [...prev, record].slice(-MAX_TOASTS));
-
       const timer = window.setTimeout(() => dismissToast(record.id), TOAST_MS);
       timers.current.set(record.id, timer);
     },
@@ -73,19 +65,46 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         body: body ?? "",
         timestamp: Date.now(),
       };
-      setItems((prev) => [record, ...prev]);
+      setNotifications((prev) => [record, ...prev].slice(0, 100));
+      if (options?.persist !== false) {
+        void client
+          .postWebNotification({
+            id: record.id,
+            title: record.title,
+            body: record.body,
+          })
+          .catch(() => {});
+      }
       if (options?.toast !== false) {
         showToast(record);
       }
     },
-    [showToast],
+    [client, setNotifications, showToast],
   );
 
   useEffect(() => {
     return subscribeAgentEvents((event) => {
-      pushNotification(event.title, event.body, { toast: true });
+      const record: NotificationRecord = {
+        id: event.id,
+        title: event.title,
+        body: event.body ?? "",
+        timestamp: event.timestamp,
+      };
+      setNotifications((prev) => {
+        if (prev.some((p) => p.id === record.id)) return prev;
+        return [record, ...prev].slice(0, 100);
+      });
+      showToast(record);
+      if (event.kind === "daily" && event.body) {
+        saveForToday(event.title, event.body);
+        showAgentUi({
+          title: "Morning plan received",
+          body: "Saved to Summaries.",
+          variant: "plan",
+        });
+      }
     });
-  }, [pushNotification]);
+  }, [saveForToday, setNotifications, showToast]);
 
   useEffect(() => {
     const activeTimers = timers.current;
@@ -98,8 +117,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ items, toasts, pushNotification, dismissToast }),
-    [items, toasts, pushNotification, dismissToast],
+    () => ({ items: notifications, toasts, pushNotification, dismissToast }),
+    [notifications, toasts, pushNotification, dismissToast],
   );
 
   return (

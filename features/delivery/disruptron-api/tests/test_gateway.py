@@ -47,6 +47,7 @@ def settings(tmp_path: Path) -> ApiSettings:
         backend_timeout_s=30.0,
         chat_mode="auto",
         agent_id="disruptron",
+        autonomous_agent_id="disruptron",
         stt_engine="off",
         stt_url="http://127.0.0.1:8000/v1/audio/transcriptions",
         stt_model="whisper-1",
@@ -54,6 +55,14 @@ def settings(tmp_path: Path) -> ApiSettings:
         stt_compute_type="int8",
         stt_timeout_s=30.0,
         cors_origins=("http://localhost:5173",),
+        agent_local=True,
+        web_subscriptions_path=tmp_path / "web_subscriptions.json",
+        scheduler_state_path=tmp_path / "scheduler_state.json",
+        daily_digest_hour=8,
+        daily_digest_minute=0,
+        scheduler_enabled=False,
+        push_port_for_guard=8010,
+        web_session_db_path=tmp_path / "web_session.db",
     )
 
 

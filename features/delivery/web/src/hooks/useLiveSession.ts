@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { showAgentUi } from "@/api/agentUi";
+import type { ChatStreamEvent } from "@/api/types";
 import { useApi } from "@/providers/ApiProvider";
+import { useSession } from "@/providers/SessionProvider";
 import { useSummaries } from "@/providers/SummariesProvider";
+import { useTtsPlayback } from "@/hooks/useTtsPlayback";
 import type { LiveSessionState } from "@/types/live";
 
 export type ChatLine = {
@@ -12,16 +15,32 @@ export type ChatLine = {
 
 function isMorningSummary(text: string): boolean {
   const lower = text.toLowerCase();
-  return lower.includes("daily plan") || lower.includes("morning briefing");
+  return lower.includes("morning briefing") || lower.includes("morning plan");
+}
+
+function toolStatusLabel(event: Extract<ChatStreamEvent, { type: "tool" }>): string {
+  const short = event.tool.replace("disruptron_ops__", "").replace("openclaw:", "");
+  if (event.status === "start") return `Running ${short}…`;
+  if (event.status === "done") return event.detail ? `${short}: ${event.detail}` : `${short} complete`;
+  return `${short} failed`;
 }
 
 export function useLiveSession() {
   const client = useApi();
   const { saveForToday } = useSummaries();
+  const { messages, setMessages, refreshMessages } = useSession();
+  const tts = useTtsPlayback();
   const [lines, setLines] = useState<ChatLine[]>([]);
   const [state, setState] = useState<LiveSessionState>("idle");
+  const [statusText, setStatusText] = useState<string | null>(null);
+  const [agentMode, setAgentMode] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const speakingTimer = useRef<number | null>(null);
   const activityDemoTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLines(messages);
+  }, [messages]);
 
   const clearActivityDemo = useCallback(() => {
     if (activityDemoTimer.current) {
@@ -38,17 +57,55 @@ export function useLiveSession() {
     [clearActivityDemo],
   );
 
+  const handleStreamEvent = useCallback((event: ChatStreamEvent) => {
+    if (event.type === "status") setStatusText(event.text);
+    if (event.type === "mode") {
+      setAgentMode(event.mode);
+      setAgentId(event.agent_id);
+      setStatusText(event.reason);
+    }
+    if (event.type === "tool") setStatusText(toolStatusLabel(event));
+    if (event.type === "ui") {
+      showAgentUi({
+        title: event.title,
+        variant: event.variant ?? "info",
+        blocks: event.blocks,
+      });
+    }
+  }, []);
+
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, image?: File) => {
       const trimmed = text.trim();
       if (!trimmed || state === "thinking") return;
 
-      setLines((prev) => [...prev, { id: crypto.randomUUID(), role: "user", text: trimmed }]);
+      const userLine: ChatLine = {
+        id: crypto.randomUUID(),
+        role: "user",
+        text: image ? `${trimmed} [image]` : trimmed,
+      };
+      setLines((prev) => [...prev, userLine]);
+      setMessages((prev) => [...prev, userLine]);
       setState("thinking");
+      setStatusText("Routing…");
+      setAgentMode(null);
 
       try {
-        const { reply } = await client.chat({ text: trimmed });
-        setLines((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", text: reply }]);
+        let reply: string;
+        if (image) {
+          const response = await client.chatWithImage(trimmed, image);
+          reply = response.reply;
+        } else {
+          reply = await client.chatStream({ text: trimmed }, handleStreamEvent);
+        }
+        setStatusText(null);
+        const assistantLine: ChatLine = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: reply,
+        };
+        setLines((prev) => [...prev, assistantLine]);
+        void refreshMessages();
 
         if (isMorningSummary(reply)) {
           saveForToday("Morning London ops plan", reply);
@@ -56,35 +113,25 @@ export function useLiveSession() {
             title: "Morning plan saved",
             body: "Today's digest is in Summaries.",
             variant: "plan",
-            blocks: [
-              {
-                type: "metrics",
-                items: [
-                  { label: "Ward items", value: "6", tone: "neutral" },
-                  { label: "Road alerts", value: "2", tone: "down" },
-                  { label: "Tube status", value: "OK", tone: "up" },
-                ],
-              },
-            ],
           });
         }
 
         setState("speaking");
+        void tts.speak(reply);
         if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
-        speakingTimer.current = window.setTimeout(() => setState("idle"), 2000);
+        speakingTimer.current = window.setTimeout(() => setState("idle"), 2500);
       } catch {
-        setLines((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: "Could not reach disruptron-api. Start the gateway and try again.",
-          },
-        ]);
+        setStatusText(null);
+        const errorLine: ChatLine = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: "Could not reach disruptron-api. Start the gateway and try again.",
+        };
+        setLines((prev) => [...prev, errorLine]);
         setState("idle");
       }
     },
-    [client, saveForToday, state],
+    [client, handleStreamEvent, refreshMessages, saveForToday, setMessages, state, tts],
   );
 
   const setListening = useCallback((active: boolean) => {
@@ -95,11 +142,24 @@ export function useLiveSession() {
     clearActivityDemo();
     if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
     setState("thinking");
+    setStatusText("Preview mode…");
     activityDemoTimer.current = window.setTimeout(() => {
+      setStatusText(null);
       setState("speaking");
       activityDemoTimer.current = window.setTimeout(() => setState("idle"), 2000);
     }, 2200);
   }, [clearActivityDemo]);
 
-  return { lines, state, send, setListening, demoActivity };
+  return {
+    lines,
+    state,
+    statusText,
+    agentMode,
+    agentId,
+    send,
+    setListening,
+    demoActivity,
+    ttsEnabled: tts.enabled,
+    toggleTts: tts.toggle,
+  };
 }
