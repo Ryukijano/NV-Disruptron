@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1256, 51.5084]}, "properties": {"category": "pavement_obstruction", "severity": 3, "description": "Scaffolding blocking pavement near Bank station"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1260, 51.5080]}, "properties": {"category": "pavement_obstruction", "severity": 2, "description": "Roadworks narrowing pavement on Threadneedle St"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1240, 51.5090]}, "properties": {"category": "broken_lift", "severity": 4, "description": "Lift out of service at Bank station"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0210, 51.5414]}, "properties": {"category": "flooding", "severity": 3, "description": "Standing water on platform 3 at Stratford"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0215, 51.5410]}, "properties": {"category": "illegal_parking", "severity": 2, "description": "Delivery vans blocking accessible entrance"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0874, 51.5048]}, "properties": {"category": "missing_dropped_kerb", "severity": 2, "description": "Dropped kerb missing on Borough High St"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0860, 51.5055]}, "properties": {"category": "pavement_obstruction", "severity": 3, "description": "Construction hoarding reducing pavement width"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1900, 51.5175]}, "properties": {"category": "broken_ev_charger", "severity": 3, "description": "EV charger fault at Queensway car park"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1400, 51.5500]}, "properties": {"category": "missing_tactile_paving", "severity": 1, "description": "Tactile paving worn out at Camden Town exit"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1300, 51.5100]}, "properties": {"category": "pavement_obstruction", "severity": 2, "description": "Cafe seating spillover on Cornhill"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1310, 51.5075]}, "properties": {"category": "pavement_obstruction", "severity": 3, "description": "Temporary traffic lights on King William St"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1230, 51.5060]}, "properties": {"category": "flooding", "severity": 2, "description": "Drain blockage on Lombard St"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0220, 51.5420]}, "properties": {"category": "pavement_obstruction", "severity": 2, "description": "Market stalls encroaching on walkway at Stratford"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.0880, 51.5030]}, "properties": {"category": "broken_lift", "severity": 4, "description": "Lift maintenance at London Bridge station"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-0.1250, 51.5095]}, "properties": {"category": "illegal_parking", "severity": 2, "description": "Cycle lane blocked on Princes St"}}
+  ]
+}

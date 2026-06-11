@@ -1,7 +1,5 @@
 import { Bell } from "@deemlol/next-icons";
-import { Button, Card, CardBody, Switch } from "@nextui-org/react";
-import { DEMO_ALERTS } from "@/api/simulateNotifications";
-import { isDemoEnabled } from "@/config/demo";
+import { Card, CardBody, Switch } from "@nextui-org/react";
 import { useNotifications } from "@/providers/NotificationsProvider";
 import { useSubscriptions } from "@/providers/SubscriptionsProvider";
 
@@ -16,13 +14,8 @@ function formatWhen(ts: number) {
 }
 
 export function NotificationsView() {
-  const { items, pushNotification } = useNotifications();
+  const { items } = useNotifications();
   const { prefs, setAlerts } = useSubscriptions();
-
-  const simulateOne = () => {
-    const sample = DEMO_ALERTS[Math.floor(Math.random() * DEMO_ALERTS.length)];
-    pushNotification(sample.title, sample.body, { toast: true });
-  };
 
   return (
     <div className="h-full min-h-0 overflow-y-auto px-4 py-3 space-y-3">
@@ -45,18 +38,6 @@ export function NotificationsView() {
           <Switch isSelected={prefs.alerts} onValueChange={setAlerts} color="primary" />
         </CardBody>
       </Card>
-
-      {isDemoEnabled() ? (
-        <Button
-          size="sm"
-          variant="flat"
-          className="bg-white/90"
-          onPress={simulateOne}
-          isDisabled={!prefs.alerts}
-        >
-          Simulate alert pop-up
-        </Button>
-      ) : null}
 
       {items.length === 0 ? (
         <Card className="border-2 border-white/80 bg-white/90 shadow-sm">

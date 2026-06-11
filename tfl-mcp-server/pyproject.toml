@@ -1,0 +1,25 @@
+[project]
+name = "tfl-mcp-server"
+version = "0.1.0"
+description = "MCP Server for Transport for London (TfL) Unified API - Line Disruptions and more"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+tfl-mcp = "server:main"
+
+[tool.uv]
+# Use dependency-groups instead of the deprecated dev-dependencies
+[dependency-groups]
+dev = []
+
+# Simple script-based project (no src layout needed for hackathon use).
+# Run with: uv run python server.py
+# or:       uv run mcp run server.py
+[tool.hatch.build.targets.wheel]
+packages = []

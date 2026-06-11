@@ -1,0 +1,10 @@
+# Optional CPU fallback dependencies for the RAPIDS GPU layer.
+# Install these when RAPIDS (cudf, cuspatial, cugraph, cuml) is not available.
+# GPU-first path auto-detects; CPU path activates gracefully when RAPIDS is absent.
+
+pandas>=2.0
+geopandas>=0.14
+shapely>=2.0
+networkx>=3.0
+scikit-learn>=1.3
+scipy>=1.11

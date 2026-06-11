@@ -37,6 +37,14 @@ export type ChatStreamEvent =
       title: string;
       variant?: "info" | "alert" | "plan";
       blocks: AgentUiBlock[];
+    }
+  | { type: "panel"; kind: string; title: string; ttlMs: number }
+  | {
+      type: "route";
+      kind: string;
+      title: string;
+      coordinates: [number, number][];
+      ttlMs: number;
     };
 
 export type UserPreferences = {
@@ -84,8 +92,12 @@ export type WebSessionBootstrapResponse = {
 export type IntegrationsResponse = {
   telegram: { mode: string; recommended: string; description: string; warning: string };
   calendar: Record<string, unknown>;
-  google_maps?: Record<string, unknown>;
+  tfl_journey?: { enabled: boolean; source: string; status: string; message?: string };
   elevenlabs?: Record<string, unknown>;
+  nemotron?: { enabled: boolean; status: string; url?: string; model?: string };
+  locateanything?: { cached: boolean; status: string; cache_path?: string; message?: string };
+  gpu?: Record<string, unknown>;
+  vision?: Record<string, unknown>;
   scheduler: { enabled: boolean; daily_digest: string };
   agent: {
     local: boolean;

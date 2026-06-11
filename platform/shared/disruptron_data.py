@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]  # platform/shared → repo root
 DATA = ROOT / "data"
 IMD_CSV = DATA / "london_wards_imd.csv"
 GVA_CSV = DATA / "borough_gva_per_job.csv"
+DISABILITY_CSV = DATA / "disability_mobility.csv"
 
 # TfL disruption severity weights for impact scoring.
 SEVERITY_WEIGHTS = {
@@ -196,6 +197,40 @@ def infer_severity_weight(status_text: str, closure_text: str = "") -> float:
         if key in text:
             return weight
     return 0.5 if text else 0.0
+
+
+@lru_cache(maxsize=1)
+def load_disability_by_ward() -> dict[str, float]:
+    """Lazy-load ward-level disability/mobility difficulty percentages.
+
+    Expected CSV columns (auto-detected):
+      - Ward Code | ward_code
+      - Mobility difficulty % | mobility_difficulty_pct
+      - DDA disability % | dda_disability_pct
+
+    Returns a dict mapping ward_code -> mobility_difficulty_pct (0–100).
+    If the file is missing, returns an empty dict so downstream tools
+    gracefully degrade.
+    """
+    if not DISABILITY_CSV.exists():
+        return {}
+    out: dict[str, float] = {}
+    with DISABILITY_CSV.open(encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            code = (row.get("Ward Code") or row.get("ward_code") or "").strip()
+            if not code:
+                continue
+            pct = _to_float(row.get("Mobility difficulty %") or row.get("mobility_difficulty_pct"))
+            if pct > 0:
+                out[code] = pct
+    return out
+
+
+def _get_ward_disability_pct(ward_code: str) -> float | None:
+    """Return mobility difficulty % for a ward, or None if data unavailable."""
+    data = load_disability_by_ward()
+    return data.get(ward_code.strip()) if data else None
 
 
 def compute_impact_score(

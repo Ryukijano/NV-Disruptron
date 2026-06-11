@@ -11,7 +11,193 @@
       "alerts": true,
       "daily": false,
       "updated_at": "2026-06-06T23:57:43.635049+00:00"
+    },
+    {
+      "session_id": "web-d0300c941d2e",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-d8024c4ae3b9",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-08T22:20:32.535785+00:00"
+    },
+    {
+      "session_id": "web-3ccff2465c05",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-08T23:18:10.249187+00:00"
+    },
+    {
+      "session_id": "web-ece96907bd24",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-e9e346421ec2",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-2c6487b5dc52",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-2b49932cb331",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-398e6831223f",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-046fa136e592",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-09T00:22:13.313528+00:00"
+    },
+    {
+      "session_id": "web-342a11fdc707",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-a3bf0f9f4b11",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-cb44e9974643",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-aa01c6a33864",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-09T01:05:59.925083+00:00"
+    },
+    {
+      "session_id": "web-118be3f1cda6",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-6553fc802dc8",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-129e5cdb1fd4",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-baf9833321e6",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-ff0a4e50f2b6",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-503671059764",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-0a2176412422",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-c96f64ff14bc",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-95dffc3666c7",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-7aca1f61b8a4",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-f200b218b440",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-06566119c498",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-3fab006cb283",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-d546a85ad402",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-8e8ea64ec39f",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-9091c00d88c3",
+      "alerts": true,
+      "daily": false,
+      "updated_at": "2026-06-09T21:26:27.865558+00:00"
+    },
+    {
+      "session_id": "web-254814dcab52",
+      "alerts": false,
+      "daily": false,
+      "updated_at": ""
+    },
+    {
+      "session_id": "web-af88512375c3",
+      "alerts": true,
+      "daily": true,
+      "updated_at": "2026-06-09T22:27:39.416086+00:00"
     }
   ],
-  "updated_at": "2026-06-06T23:57:43.635098+00:00"
+  "updated_at": "2026-06-09T22:27:39.416148+00:00"
 }

@@ -107,3 +107,15 @@ def chat_tool_sse(tool: str, status: str, detail: str = "") -> str:
 
 def chat_ui_sse(blocks: list[dict], title: str, variant: str = "info") -> str:
     return f"data: {json.dumps({'type': 'ui', 'title': title, 'variant': variant, 'blocks': blocks})}\n\n"
+
+
+def chat_panel_sse(kind: str, title: str, ttl_ms: int = 15000) -> str:
+    """Emit a tactical panel directive — triggers a COD-tablet card on the frontend."""
+    return f"data: {json.dumps({'type': 'panel', 'kind': kind, 'title': title, 'ttlMs': ttl_ms})}\n\n"
+
+
+def chat_route_sse(
+    kind: str, title: str, coordinates: list[list[float]], ttl_ms: int = 30000
+) -> str:
+    """Emit a route coordinate payload so the frontend can draw the actual TfL journey on the map."""
+    return f"data: {json.dumps({'type': 'route', 'kind': kind, 'title': title, 'coordinates': coordinates, 'ttlMs': ttl_ms})}\n\n"

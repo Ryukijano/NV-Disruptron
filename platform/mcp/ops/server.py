@@ -162,86 +162,211 @@ def store_memory_fact(
     return {"ok": True, "fact_id": fid}
 
 
-@mcp.tool()
-async def get_transit_route(origin: str, destination: str, mode: str = "transit") -> dict:
-    """Google Maps route between two London places (transit, driving, walking, bicycling).
+TFL_BASE_URL = "https://api.tfl.gov.uk"
 
-    Requires GOOGLE_MAPS_API_KEY in environment. Use for commute and nearest-station queries.
-    """
+
+def _tfl_params(extra: dict[str, object] | None = None) -> dict[str, object]:
+    """Build query parameters including existing TfL auth if configured."""
     import os
 
+    params: dict[str, object] = {}
+    key = os.getenv("TFL_APP_KEY", "").strip()
+    app_id = os.getenv("TFL_APP_ID", "").strip()
+    if key:
+        params["app_key"] = key
+    if app_id:
+        params["app_id"] = app_id
+    if extra:
+        params.update(extra)
+    return params
+
+
+async def _geocode_location(location: str) -> str:
+    """Try to resolve a location string to a TfL-friendly format.
+
+    Returns postcode if valid, lat/lon if geocoded, or original string.
+    """
     import httpx
 
-    key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-    if not key:
-        return {
-            "ok": False,
-            "error": "GOOGLE_MAPS_API_KEY not configured — add to .env",
-        }
-    params = {
-        "origin": origin,
-        "destination": destination,
-        "mode": mode,
-        "key": key,
-        "region": "uk",
+    # 1) Try postcode.io for UK postcodes
+    pc = location.replace(" ", "").upper()
+    if len(pc) >= 5:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            try:
+                resp = await client.get(f"https://api.postcodes.io/postcodes/{pc}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get("status") == 200:
+                        lat = data["result"]["latitude"]
+                        lon = data["result"]["longitude"]
+                        return f"{lat},{lon}"
+            except Exception:
+                pass
+
+    # 2) Try TfL StopPoint search for station names
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        try:
+            resp = await client.get(
+                f"{TFL_BASE_URL}/StopPoint/Search/{location.replace(' ', '%20')}",
+                params=_tfl_params({"maxResults": 1}),
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                matches = data.get("matches", [])
+                if matches and matches[0].get("lat") and matches[0].get("lon"):
+                    return f"{matches[0]['lat']},{matches[0]['lon']}"
+        except Exception:
+            pass
+
+    # 3) If already looks like lat,lon, use as-is
+    if "," in location and all(c.isdigit() or c in ".,- " for c in location):
+        return location.strip()
+
+    # 4) Fallback: return original (TfL may still resolve it)
+    return location
+
+
+@mcp.tool()
+async def get_transit_route(origin: str, destination: str, mode: str = "transit") -> dict:
+    """TfL Journey Planner route between two London places (tube, bus, walking, cycling).
+
+    Uses the free TfL Unified API — no Google Maps key required.
+    Accepts postcodes (SW1A 1AA), station names (Victoria), or lat/lon (51.5,-0.1).
+    """
+    import httpx
+
+    mode_map = {
+        "transit": "tube,overground,dlr,bus,tram,river-bus",
+        "driving": "bus",
+        "walking": "walking",
+        "bicycling": "cycle",
     }
-    url = "https://maps.googleapis.com/maps/api/directions/json"
+    tfl_modes = mode_map.get(mode, mode)
+
+    # Geocode both ends to avoid ambiguous 300 responses
+    from_resolved = await _geocode_location(origin)
+    to_resolved = await _geocode_location(destination)
+
+    params = _tfl_params({
+        "mode": tfl_modes,
+        "journeyPreference": "leastwalking",
+    })
+
+    from_enc = from_resolved.replace(" ", "%20")
+    to_enc = to_resolved.replace(" ", "%20")
+    url = f"{TFL_BASE_URL}/Journey/JourneyResults/{from_enc}/to/{to_enc}"
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(url, params=params)
+        if resp.status_code in (300, 301, 302, 307, 308):
+            # Ambiguous location — try with generic London context
+            return {
+                "ok": False,
+                "error": f"Ambiguous location. Try a postcode (e.g., SW1A 1AA) or station name.",
+            }
         resp.raise_for_status()
         data = resp.json()
-    if data.get("status") != "OK":
-        return {"ok": False, "status": data.get("status"), "error": data.get("error_message")}
-    route = (data.get("routes") or [{}])[0]
-    leg = ((route.get("legs") or [{}])[0])
+
+    journeys = data.get("journeys", [])
+    if not journeys:
+        return {
+            "ok": False,
+            "error": data.get("message", "No journeys found — check origin/destination spelling."),
+        }
+
+    best = journeys[0]
+    legs = best.get("legs", [])
+    steps = []
+    for leg in legs:
+        mode_name = leg.get("mode", {}).get("name", "unknown")
+        instruction = leg.get("instruction", {}).get("summary", "")
+        duration_min = leg.get("duration", 0)
+        steps.append({
+            "mode": mode_name,
+            "instruction": instruction,
+            "duration_min": duration_min,
+            "from": leg.get("departurePoint", {}).get("commonName", ""),
+            "to": leg.get("arrivalPoint", {}).get("commonName", ""),
+        })
+
     return {
         "ok": True,
-        "summary": route.get("summary"),
-        "duration": leg.get("duration", {}).get("text"),
-        "distance": leg.get("distance", {}).get("text"),
-        "start": leg.get("start_address"),
-        "end": leg.get("end_address"),
-        "steps": [
-            {
-                "instruction": s.get("html_instructions", ""),
-                "mode": s.get("travel_mode"),
-                "duration": s.get("duration", {}).get("text"),
-            }
-            for s in (leg.get("steps") or [])[:12]
-        ],
+        "source": "tfl_journey_planner",
+        "duration": best.get("duration", 0),
+        "duration_text": f"{best.get('duration', 0)} min",
+        "start": origin,
+        "end": destination,
+        "legs": len(steps),
+        "steps": steps,
     }
 
 
 @mcp.tool()
 async def search_places_near(query: str, location: str = "London, UK", radius_m: int = 3000) -> dict:
-    """Search Google Places near a London location (stations, chargers, POIs).
+    """Search TfL stations/stops and London POIs near a location.
 
-    Requires GOOGLE_MAPS_API_KEY in environment.
+    Uses TfL StopPoint search + postcodes.io — no Google Maps key required.
+    Accepts query like 'charger', 'tube station', 'step-free', 'parking'.
     """
-    import os
-
     import httpx
 
-    key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-    if not key:
-        return {"ok": False, "error": "GOOGLE_MAPS_API_KEY not configured"}
-    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-    params = {"query": f"{query} near {location}", "key": key, "region": "uk"}
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.get(url, params=params)
+    loc_lat, loc_lon = None, None
+    pc = location.replace(" ", "").upper()
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        pc_resp = await client.get(f"https://api.postcodes.io/postcodes/{pc}")
+        if pc_resp.status_code == 200:
+            pc_data = pc_resp.json()
+            if pc_data.get("status") == 200:
+                loc_lat = pc_data["result"]["latitude"]
+                loc_lon = pc_data["result"]["longitude"]
+
+    if loc_lat is None:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            sp_resp = await client.get(
+                f"{TFL_BASE_URL}/StopPoint/Search/{location.replace(' ', '%20')}",
+                params=_tfl_params({"maxResults": 1}),
+            )
+            if sp_resp.status_code == 200:
+                sp_data = sp_resp.json()
+                matches = sp_data.get("matches", [])
+                if matches:
+                    loc_lat = matches[0].get("lat")
+                    loc_lon = matches[0].get("lon")
+
+    if loc_lat is None:
+        return {"ok": False, "error": f"Could not geocode location: {location}"}
+
+    # Use TfL StopPoint search around lat/lon (most reliable open endpoint)
+    params = _tfl_params({
+        "lat": loc_lat,
+        "lon": loc_lon,
+        "radius": min(radius_m, 5000),
+        "stopTypes": "NaptanMetroStation,NaptanRailStation,NaptanBusCoachStation,NaptanFerryPort",
+    })
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(f"{TFL_BASE_URL}/StopPoint", params=params)
         resp.raise_for_status()
         data = resp.json()
+
     results = []
-    for place in (data.get("results") or [])[:8]:
-        results.append(
-            {
-                "name": place.get("name"),
-                "address": place.get("formatted_address"),
-                "rating": place.get("rating"),
-                "types": (place.get("types") or [])[:4],
-            }
-        )
-    return {"ok": True, "count": len(results), "places": results}
+    q = query.lower()
+    for place in (data.get("stopPoints") or [])[:12]:
+        name = (place.get("commonName") or "").lower()
+        modes = [m for m in (place.get("modes") or [])]
+        mode_names = [m.lower() for m in modes]
+        # Filter by query keyword if provided
+        if q not in name and q not in " ".join(mode_names) and query not in ("", "all", "*"):
+            continue
+        results.append({
+            "name": place.get("commonName"),
+            "type": "StopPoint",
+            "lat": place.get("lat"),
+            "lon": place.get("lon"),
+            "modes": modes,
+            "distance_m": place.get("distance"),
+        })
+
+    return {"ok": True, "source": "tfl_stoppoint", "count": len(results), "places": results}
 
 
 def main() -> None:

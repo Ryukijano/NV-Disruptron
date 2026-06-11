@@ -113,8 +113,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-slate-50 text-sm text-slate-500">
-        Loading session…
+      <div className="flex h-dvh items-center justify-center bg-obsidian text-sm text-cyan-neon font-mono tracking-widest uppercase">
+        <span className="animate-neon-pulse">Loading session…</span>
       </div>
     );
   }

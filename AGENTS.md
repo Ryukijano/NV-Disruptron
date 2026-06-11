@@ -13,3 +13,12 @@
 - Voice: `messages.tts` ElevenLabs persona `disruptron-public`; rules in `features/agent/workspace/VOICE.md`.
 - Key tools: `get_london_city_briefing`, `get_parking_and_charging_snapshot`, `get_ev_charge_summary`.
 - TfL transport MCP path: `platform/mcp/transport/`.
+- Vision MCP path: `platform/mcp/vision/`; hazard taxonomy: 7 categories (pavement_obstruction, broken_lift, missing_dropped_kerb, flooding, illegal_parking, broken_ev_charger, missing_tactile_paving).
+- LocateAnything-3B client at `features/vision/locate_anything_client.py` with Nemotron Omni OpenAI-compatible fallback.
+- Hazard pipeline: `features/vision/hazard_pipeline.py` — 4 stages (detect → parse → geotag → store), writes SQLite + GeoJSON.
+- MapLibre GL frontend at `features/delivery/web/src/pages/MapPage.tsx` with hazard point layer + ward boundary placeholder.
+- Gateway GeoJSON endpoints: `GET /v1/geo/hazards`, `GET /v1/geo/wards`, `POST /v1/hazard/upload`.
+- GPU spatial endpoints: `POST /v1/geo/hazards/cluster` (DBSCAN on real SQLite data), `GET /v1/geo/nearest-step-free` (live TfL StopPoint API), `GET /v1/geo/accessibility-risk` (TfL API + SQLite hazards + ward data).
+- RAPIDS GPU layer: `platform/shared/gpu/` — cudf_etl, cuspatial_join, cugraph_network, cuml_clustering. Auto-detects GPU libs; CPU fallback via pandas/geopandas/networkx/sklearn.
+- GPU status exposed in integrations snapshot (`/v1/integrations`) as `gpu: {gpu_available, libs_loaded, status}`.
+- Smoke tests: `scripts/smoke_test_ws1_v2.py` (transport/impact), `scripts/smoke_test_ws2_ws3.py` (vision + GPU + gateway).

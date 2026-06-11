@@ -60,12 +60,14 @@ async def calendar_mcp_health() -> dict[str, object]:
         }
 
 
-def google_maps_status() -> dict[str, object]:
-    key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+def tfl_journey_status() -> dict[str, object]:
+    key = os.getenv("TFL_APP_KEY", "").strip()
     return {
-        "enabled": bool(key),
-        "status": "configured" if key else "needs_key",
-        "message": "Set GOOGLE_MAPS_API_KEY in .env for routes/places tools",
+        "enabled": True,
+        "source": "tfl_journey_planner",
+        "status": "configured" if key else "anonymous",
+        "message": "TfL Journey Planner (open API) — routes via tube, bus, walking, cycling. "
+                   + ("App key configured." if key else "Anonymous (50 req/min)."),
     }
 
 
@@ -100,6 +102,52 @@ def telegram_mode() -> dict[str, str]:
     }
 
 
+def nemotron_status() -> dict[str, object]:
+    url = os.getenv("NEMOTRON_URL", "http://127.0.0.1:8008/v1")
+    try:
+        import httpx
+        resp = httpx.get(f"{url}/models", timeout=5.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            models = data.get("data", [])
+            model_id = models[0].get("id", "unknown") if models else "unknown"
+            return {"enabled": True, "status": "healthy", "url": url, "model": model_id}
+        return {"enabled": True, "status": f"http_{resp.status_code}", "url": url}
+    except Exception as exc:
+        return {"enabled": bool(url), "status": "unreachable", "url": url, "message": str(exc)}
+
+
+def locateanything_status() -> dict[str, object]:
+    from pathlib import Path
+    cache = Path.home() / ".cache" / "huggingface" / "hub" / "models--nvidia--LocateAnything-3B"
+    return {
+        "cached": cache.exists(),
+        "cache_path": str(cache),
+        "status": "cached" if cache.exists() else "not_cached",
+        "message": "Download with: huggingface-cli download nvidia/LocateAnything-3B" if not cache.exists() else "ready",
+    }
+
+
+def gpu_status() -> dict[str, object]:
+    from shared.gpu import GPU_AVAILABLE, GPU_LIBS
+    return {
+        "gpu_available": GPU_AVAILABLE,
+        "libs_loaded": list(GPU_LIBS.keys()),
+        "status": "active" if GPU_AVAILABLE else "cpu_fallback",
+    }
+
+
+def vision_status() -> dict[str, object]:
+    from pathlib import Path
+    hazard_geojson = (
+        Path(__file__).resolve().parents[4] / "data" / "geo" / "hazards.geojson"
+    )
+    return {
+        "hazard_geojson_exists": hazard_geojson.exists(),
+        "hazard_geojson_path": str(hazard_geojson),
+    }
+
+
 async def integrations_snapshot(*, force: bool = False) -> dict[str, object]:
     global _HEALTH_CACHE, _HEALTH_CACHE_AT  # noqa: PLW0603
     now = time.monotonic()
@@ -110,8 +158,12 @@ async def integrations_snapshot(*, force: bool = False) -> dict[str, object]:
     payload = {
         "telegram": telegram_mode(),
         "calendar": calendar,
-        "google_maps": google_maps_status(),
+        "tfl_journey": tfl_journey_status(),
         "elevenlabs": elevenlabs_status(),
+        "nemotron": nemotron_status(),
+        "locateanything": locateanything_status(),
+        "gpu": gpu_status(),
+        "vision": vision_status(),
     }
     _HEALTH_CACHE = payload
     _HEALTH_CACHE_AT = now

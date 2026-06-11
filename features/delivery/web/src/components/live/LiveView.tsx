@@ -1,6 +1,5 @@
 import { Volume2, VolumeX } from "@deemlol/next-icons";
 import { Button } from "@nextui-org/react";
-import { isDemoEnabled } from "@/config/demo";
 import { useLiveSession } from "@/hooks/useLiveSession";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useEffect, useState } from "react";
@@ -8,7 +7,6 @@ import { useApi } from "@/providers/ApiProvider";
 import { AgentModeBadge } from "./AgentModeBadge";
 import { AgentUiPopups } from "./AgentUiPopups";
 import { ChatBox } from "./ChatBox";
-import { LiveDemoControls } from "./LiveDemoControls";
 import { VoiceControls } from "./VoiceControls";
 import { TextInputBar } from "./TextInputBar";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
@@ -21,7 +19,6 @@ export function LiveView() {
     statusText,
     send,
     setListening,
-    demoActivity,
     agentMode,
     agentId,
     ttsEnabled,
@@ -61,27 +58,27 @@ export function LiveView() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-4 py-3">
       {/* Top Controls Header */}
-      <div className="flex items-center justify-between gap-2 shrink-0 bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/60">
+      <div className="flex items-center justify-between gap-2 shrink-0 glass-panel px-3 py-2 border border-white/5 shadow-[0_0_15px_rgba(102,252,241,0.05)]">
         <AgentModeBadge mode={agentMode} agentId={agentId} />
         <Button
           size="sm"
           variant="light"
-          className="text-slate-500 min-w-0"
+          className="text-cyan-neon/80 font-mono hover:text-cyan-neon min-w-0"
           onPress={toggleTts}
           startContent={
             ttsEnabled ? (
-              <Volume2 size={16} strokeWidth={1.75} />
+              <Volume2 size={16} strokeWidth={2} />
             ) : (
-              <VolumeX size={16} strokeWidth={1.75} />
+              <VolumeX size={16} strokeWidth={2} />
             )
           }
         >
-          Voice out
+          Voice Link
         </Button>
       </div>
 
       {/* Expressive Neural Visualizer */}
-      <div className="shrink-0 bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 shadow-md">
+      <div className="shrink-0 glass-panel border border-white/5 shadow-lg overflow-hidden">
         <GeminiVisualizer state={activeState} />
       </div>
 
@@ -98,10 +95,8 @@ export function LiveView() {
         <AgentUiPopups />
       </div>
 
-      {isDemoEnabled() ? <LiveDemoControls onDemoActivity={demoActivity} /> : null}
-
       {/* Bottom Input Area */}
-      <div className="flex items-center gap-2 shrink-0 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-white/60">
+      <div className="flex items-center gap-2 shrink-0 glass-panel p-2.5 border border-white/5 shadow-[0_0_15px_rgba(102,252,241,0.08)]">
         <VoiceControls
           supported={voice.supported}
           listening={voice.listening || voice.transcribing}

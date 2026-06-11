@@ -1,0 +1,49 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1256,
+          51.5084
+        ]
+      },
+      "properties": {
+        "event_id": "evt-demo-001",
+        "video_id": "vid-demo",
+        "category": "pavement_obstruction",
+        "label": "scaffolding blocking pavement",
+        "duration_sec": 4.4,
+        "avg_confidence": 0.82,
+        "frame_count": 5,
+        "timestamp": "2026-06-09T22:00:00Z",
+        "ward": "City of London",
+        "borough": "City of London"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.021,
+          51.5414
+        ]
+      },
+      "properties": {
+        "event_id": "evt-demo-002",
+        "video_id": "vid-demo",
+        "category": "broken_lift",
+        "label": "lift out of service",
+        "duration_sec": 9.0,
+        "avg_confidence": 0.91,
+        "frame_count": 10,
+        "timestamp": "2026-06-09T22:00:00Z",
+        "ward": "Newham",
+        "borough": "Newham"
+      }
+    }
+  ]
+}

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { showAgentUi } from "@/api/agentUi";
 import type { ChatStreamEvent } from "@/api/types";
 import { useApi } from "@/providers/ApiProvider";
 import { useSession } from "@/providers/SessionProvider";
 import { useSummaries } from "@/providers/SummariesProvider";
+import { useMapState } from "@/providers/MapStateProvider";
+import { useTacticalPanels } from "@/providers/TacticalPanelProvider";
 import { useTtsPlayback } from "@/hooks/useTtsPlayback";
 import type { LiveSessionState } from "@/types/live";
 
@@ -27,9 +30,12 @@ function toolStatusLabel(event: Extract<ChatStreamEvent, { type: "tool" }>): str
 
 export function useLiveSession() {
   const client = useApi();
+  const navigate = useNavigate();
+  const { triggerMapIntent, setRouteCoordinates, setIsRoutingActive } = useMapState();
   const { saveForToday } = useSummaries();
   const { messages, setMessages, refreshMessages } = useSession();
   const tts = useTtsPlayback();
+  const { pushPanel, clearAllPanels } = useTacticalPanels();
   const [lines, setLines] = useState<ChatLine[]>([]);
   const [state, setState] = useState<LiveSessionState>("idle");
   const [statusText, setStatusText] = useState<string | null>(null);
@@ -72,12 +78,25 @@ export function useLiveSession() {
         blocks: event.blocks,
       });
     }
-  }, []);
+    if (event.type === "panel") {
+      pushPanel(event.kind as any, event.title, event.ttlMs);
+    }
+    if (event.type === "route") {
+      setRouteCoordinates(event.coordinates);
+      setIsRoutingActive(true);
+    }
+  }, [pushPanel, setRouteCoordinates, setIsRoutingActive]);
 
   const send = useCallback(
     async (text: string, image?: File) => {
       const trimmed = text.trim();
       if (!trimmed || state === "thinking") return;
+
+      clearAllPanels();
+      const matched = triggerMapIntent(trimmed);
+      if (matched) {
+        navigate("/");
+      }
 
       const userLine: ChatLine = {
         id: crypto.randomUUID(),
@@ -131,7 +150,7 @@ export function useLiveSession() {
         setState("idle");
       }
     },
-    [client, handleStreamEvent, refreshMessages, saveForToday, setMessages, state, tts],
+    [client, clearAllPanels, handleStreamEvent, refreshMessages, saveForToday, setMessages, state, tts],
   );
 
   const setListening = useCallback((active: boolean) => {

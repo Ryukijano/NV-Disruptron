@@ -152,7 +152,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 key="step0"
                 variants={pageVariants}
                 initial="initial"
-                enter="enter"
+                animate="enter"
                 exit="exit"
                 className="space-y-4"
               >
@@ -178,7 +178,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 key="step1"
                 variants={pageVariants}
                 initial="initial"
-                enter="enter"
+                animate="enter"
                 exit="exit"
                 className="space-y-4"
               >
@@ -232,7 +232,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 key="step2"
                 variants={pageVariants}
                 initial="initial"
-                enter="enter"
+                animate="enter"
                 exit="exit"
                 className="space-y-4"
               >
@@ -290,7 +290,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 key="step3"
                 variants={pageVariants}
                 initial="initial"
-                enter="enter"
+                animate="enter"
                 exit="exit"
                 className="space-y-4"
               >
@@ -346,7 +346,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 key="step4"
                 variants={pageVariants}
                 initial="initial"
-                enter="enter"
+                animate="enter"
                 exit="exit"
                 className="space-y-4"
               >

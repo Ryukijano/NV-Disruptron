@@ -1,31 +1,16 @@
-import { Bell } from "@deemlol/next-icons";
-import { Tab, Tabs } from "@nextui-org/react";
+import { Map, ClipboardList, Bell, Camera } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { NotificationSimulator } from "@/components/notifications/NotificationSimulator";
 import { NotificationToasts } from "@/components/notifications/NotificationToasts";
-import { GradientBackground } from "@/components/visuals/GradientBackground";
-import { isDemoEnabled } from "@/config/demo";
 import { getApiClient } from "@/api/client";
 import type { IntegrationsResponse } from "@/api/types";
 
-const tabs = [
-  { key: "/", label: "Live" },
-  { key: "/summaries", label: "Summaries" },
-  { key: "/notifications", label: "Notifications", icon: Bell },
+const navItems = [
+  { key: "/", label: "Map", icon: Map },
+  { key: "/cctvs", label: "CCTVs", icon: Camera },
+  { key: "/summaries", label: "Logs", icon: ClipboardList },
+  { key: "/notifications", label: "Alerts", icon: Bell },
 ];
-
-function IntegrationPill({ label, ok }: { label: string; ok: boolean }) {
-  return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[10px] ${
-        ok ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-      }`}
-    >
-      {label}
-    </span>
-  );
-}
 
 export function AppShell() {
   const location = useLocation();
@@ -39,58 +24,65 @@ export function AppShell() {
       .catch(() => {});
   }, []);
 
-  const calendarOk = integrations?.calendar?.status === "healthy";
-  const mapsOk = integrations?.google_maps?.status === "configured";
-  const ttsOk = integrations?.elevenlabs?.status === "configured";
+  const allHealthy =
+    integrations?.nemotron?.status === "healthy" &&
+    integrations?.locateanything?.status === "cached";
+
+  const isMapPage = location.pathname === "/";
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden">
-      <GradientBackground />
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0B0D] text-[#E8E8E8] font-sans">
       <NotificationToasts />
-      {isDemoEnabled() ? <NotificationSimulator /> : null}
 
-      <header className="relative z-10 shrink-0 border-b border-white/60 bg-white/75 backdrop-blur-md px-4 py-3">
-        <p className="text-center text-xs uppercase tracking-[0.2em] text-cyan-600 mb-1">
-          NV Disruptron
-        </p>
-        {integrations ? (
-          <div className="flex flex-wrap justify-center gap-1.5 mb-2">
-            <IntegrationPill label="Calendar" ok={Boolean(calendarOk)} />
-            <IntegrationPill label="Maps" ok={Boolean(mapsOk)} />
-            <IntegrationPill label="TTS" ok={Boolean(ttsOk)} />
-          </div>
-        ) : null}
-        <Tabs
-          selectedKey={location.pathname}
-          onSelectionChange={(key) => navigate(String(key))}
-          variant="underlined"
-          classNames={{
-            base: "w-full",
-            tabList: "w-full max-w-xl mx-auto justify-center gap-4",
-            tab: "text-slate-500",
-            cursor: "bg-gradient-to-r from-cyan-500 to-emerald-500",
-            tabContent: "group-data-[selected=true]:text-slate-800 font-medium",
-          }}
-        >
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.key}
-              title={
-                tab.icon ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <tab.icon size={16} strokeWidth={1.75} color="currentColor" />
-                    {tab.label}
-                  </span>
-                ) : (
-                  tab.label
-                )
-              }
-            />
-          ))}
-        </Tabs>
+      <header className="relative z-30 shrink-0 border-b border-white/[0.04] bg-[#0B0B0D]/90 backdrop-blur-md px-5 py-2.5 flex items-center justify-between">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
+          <span className="text-[13px] font-semibold tracking-tight text-white/90">
+            NV Disruptron
+          </span>
+        </div>
+
+        {/* Status */}
+        <div className="hidden sm:flex items-center gap-2">
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              allHealthy ? "bg-[#10B981]" : "bg-[#F59E0B]"
+            }`}
+          />
+          <span className="text-[11px] text-white/40 tracking-wide">
+            {allHealthy ? "Systems normal" : "Degraded"}
+          </span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex items-center gap-1">
+          {navItems.map((item) => {
+            const active = location.pathname === item.key;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                onClick={() => navigate(item.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200 ${
+                  active
+                    ? "bg-white/[0.06] text-white/90"
+                    : "text-white/40 hover:text-white/70 hover:bg-white/[0.03]"
+                }`}
+              >
+                <Icon size={13} strokeWidth={2} />
+                <span className="hidden sm:inline">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </header>
 
-      <main className="relative z-10 min-h-0 flex-1 overflow-hidden max-w-3xl w-full mx-auto">
+      <main
+        className={`relative z-10 min-h-0 flex-1 overflow-hidden w-full ${
+          isMapPage ? "" : "max-w-3xl mx-auto"
+        }`}
+      >
         <Outlet />
       </main>
     </div>

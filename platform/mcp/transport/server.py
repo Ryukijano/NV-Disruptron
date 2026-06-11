@@ -53,6 +53,7 @@ mcp = FastMCP(
         "get_all_road_disruptions, get_road_status, get_road_disruptions. "
         "EV charging: get_parking_and_charging_snapshot, get_ev_charge_summary, get_ev_charge_connectors. "
         "Car parks: list_tfl_car_parks, get_car_park_detail, get_stop_car_parks (live bays often HTTP 500). "
+        "Accessibility: get_stop_accessibility (lifts/ramps), plan_step_free_journey, get_lift_disruptions. "
         "Quick overview: get_london_traffic_snapshot (includes EV + car parks). "
         "Line IDs: victoria, jubilee, northern, elizabeth. Road IDs: a1, a2, a3, a406, inner ring."
     ),
@@ -296,6 +297,113 @@ async def search_stop_points(query: str, modes: str | None = None) -> list[dict]
     return await _tfl_get(f"/StopPoint/Search/{query.strip()}", params)
 
 
+def _slim_stop_accessibility(stop_data: dict) -> dict:
+    """Extract accessibility-relevant fields from a TfL StopPoint response."""
+    props = {
+        ap.get("key", "").strip(): ap.get("value", "")
+        for ap in stop_data.get("additionalProperties") or []
+        if ap.get("key")
+    }
+
+    def _int(key: str) -> int:
+        try:
+            return int(float(str(props.get(key, "0")).strip()))
+        except (ValueError, TypeError):
+            return 0
+
+    def _yes_no(key: str) -> bool | None:
+        v = (props.get(key) or "").lower().strip()
+        if v in ("yes", "true", "1"):
+            return True
+        if v in ("no", "false", "0"):
+            return False
+        return None
+
+    # Platform-level accessibility info is buried in children.stopPoints.additionalProperties
+    children = stop_data.get("children") or []
+    child_stops = children if isinstance(children, list) else []
+    platforms: list[dict] = []
+    for child in child_stops:
+        if not isinstance(child, dict):
+            continue
+        child_props = {
+            ap.get("key", "").strip(): ap.get("value", "")
+            for ap in child.get("additionalProperties") or []
+            if ap.get("key")
+        }
+        platforms.append(
+            {
+                "id": child.get("id"),
+                "name": child.get("commonName"),
+                "lat": child.get("lat"),
+                "lon": child.get("lon"),
+                "lifts": _int("Lifts"),
+                "escalators": _int("Escalators"),
+                "boarding_ramps": _yes_no("Boarding Ramps"),
+                "gates": _int("Gates"),
+                "help_points": child_props.get("Help Points", ""),
+                "toilets": _yes_no("Toilets"),
+                "bridge": _yes_no("Bridge"),
+            }
+        )
+
+    return {
+        "stop_id": stop_data.get("id"),
+        "name": stop_data.get("commonName"),
+        "lat": stop_data.get("lat"),
+        "lon": stop_data.get("lon"),
+        "modes": [m.get("modeName") for m in stop_data.get("modes") or [] if isinstance(m, dict)],
+        "lifts": _int("Lifts"),
+        "escalators": _int("Escalators"),
+        "boarding_ramps": _yes_no("Boarding Ramps"),
+        "gates": _int("Gates"),
+        "help_points": props.get("Help Points", ""),
+        "toilets": _yes_no("Toilets"),
+        "bridge": _yes_no("Bridge"),
+        "waiting_room": _yes_no("Waiting Room"),
+        "wifi": _yes_no("WiFi"),
+        "euro_cash_machines": _yes_no("Euro Cash Machines"),
+        "car_park": _yes_no("Car park"),
+        "platforms": platforms,
+        "step_free_summary": _derive_step_free_summary(props, platforms),
+    }
+
+
+def _derive_step_free_summary(props: dict[str, Any], platforms: list[dict]) -> str:
+    """Derive a human-readable step-free accessibility summary."""
+    lifts = props.get("Lifts", "0")
+    ramps = (props.get("Boarding Ramps") or "").lower()
+    has_lift = lifts not in ("0", "", "no")
+    has_ramp = ramps in ("yes", "true", "1")
+    if has_lift and has_ramp:
+        return "Step-free access available: lifts + boarding ramps"
+    if has_lift:
+        return "Step-free access available: lifts (no boarding ramps)"
+    if has_ramp:
+        return "Partial step-free: boarding ramps only (no lifts)"
+    return "No step-free access reported"
+
+
+@mcp.tool()
+async def get_stop_accessibility(stop_id: str) -> dict:
+    """Get lift, escalator, ramp, and gate accessibility info for a TfL stop.
+
+    Implements GET /StopPoint/{id} and parses additionalProperties for
+    Lifts, Escalators, Boarding Ramps, Gates, Toilets, Bridge, etc.
+
+    Args:
+        stop_id: TfL StopPoint ID (e.g. '940GZZLUGFD' for Greenford).
+               Use search_stop_points to find IDs.
+
+    Returns:
+        Dict with station-level and per-platform accessibility metadata.
+    """
+    if not stop_id or not stop_id.strip():
+        raise ValueError("stop_id is required")
+    data = await _tfl_get(f"/StopPoint/{stop_id.strip()}")
+    return _slim_stop_accessibility(data)
+
+
 @mcp.tool()
 async def get_stop_arrivals(stop_id: str) -> list[dict]:
     """Get live arrival predictions at a TfL stop.
@@ -347,6 +455,36 @@ async def plan_journey(
     params = {
         "useRealTimeLiveArrivals": "true",
         "mode": modes,
+    }
+    return await _tfl_get(path, params)
+
+
+@mcp.tool()
+async def plan_step_free_journey(
+    from_location: str,
+    to_location: str,
+    modes: str = "tube,bus,walking",
+) -> dict:
+    """Plan a step-free journey using live TfL data.
+
+    Wraps the Journey Planner with accessibilityPreference=stepFreeToVehicle,
+    stepFreeToPlatform, noEscalators — preferring routes with lifts, ramps,
+    and no stairs/escalators.
+
+    Implements GET /Journey/JourneyResults/{from}/to/{to}?accessibilityPreference=...
+
+    Args:
+        from_location: Origin as lat,lon, postcode, or Naptan ID.
+        to_location: Destination as lat,lon, postcode, or Naptan ID.
+        modes: Comma-separated modes (default 'tube,bus,walking').
+    """
+    if not from_location or not to_location:
+        raise ValueError("from_location and to_location are required")
+    path = f"/Journey/JourneyResults/{from_location.strip()}/to/{to_location.strip()}"
+    params = {
+        "useRealTimeLiveArrivals": "true",
+        "mode": modes,
+        "accessibilityPreference": "stepFreeToVehicle,stepFreeToPlatform,noEscalators",
     }
     return await _tfl_get(path, params)
 
@@ -831,6 +969,41 @@ async def get_stop_crowding(stop_id: str, line_id: str) -> dict:
     if not stop_id or not line_id:
         raise ValueError("stop_id and line_id are required")
     return await _tfl_get(f"/StopPoint/{stop_id.strip()}/Crowding/{line_id.strip()}")
+
+
+@mcp.tool()
+async def get_lift_disruptions() -> dict:
+    """Get real-time lift and escalator outage alerts across the TfL network.
+
+    Implements GET /Disruptions/Lifts/v2.
+
+    Note: This endpoint was temporarily disabled by TfL due to database stability
+    issues. If unavailable, the tool returns a degraded response with a clear
+    fallback message and suggests using get_line_disruptions to check for
+    accessibility-related closures instead.
+    """
+    try:
+        data = await _tfl_get("/Disruptions/Lifts/v2")
+        return {
+            "status": "live",
+            "outages": data if isinstance(data, list) else [data],
+            "count": len(data) if isinstance(data, list) else 1,
+        }
+    except httpx.HTTPStatusError as exc:
+        # Degraded graceful fallback — the endpoint is known to be unstable
+        return {
+            "status": "degraded",
+            "tfl_endpoint": "/Disruptions/Lifts/v2",
+            "error_code": exc.response.status_code,
+            "message": (
+                "TfL lift/escalator disruption feed is currently unavailable. "
+                "Use get_line_disruptions(line_id) to check for accessibility-related "
+                "closures (e.g., 'step free access closed', 'lift out of service')."
+            ),
+            "fallback_tools": ["get_line_disruptions", "get_stop_accessibility"],
+            "outages": [],
+            "count": 0,
+        }
 
 
 @mcp.tool()

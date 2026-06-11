@@ -41,16 +41,41 @@ activity:
 - Project: **NV-Disruptron** — Hack for Impact London 2026
 - Stack: local DGX Spark, vLLM Nemotron, OpenClaw gateway, ElevenLabs TTS (optional)
 
-## Transport (synced from web onboarding)
 
 ```yaml
 transport:
-  usual_lines: ['central', 'jubilee']
+  usual_lines: ['central', 'jubilee', 'northern', 'district', 'piccadilly']
+  areas:
+    - label: "WC1"
+      ward_or_postcode_prefix: "WC1"
+  alert_on:
+    line_disruption: true
+    road_congestion_on_commute: true
+```
+
+
+```yaml
+transport:
+  usual_lines: ["central"]
   areas:
     - label: "E15"
       ward_or_postcode_prefix: "E15"
-    - label: "EC2"
-      ward_or_postcode_prefix: "EC2"
+    - label: "EC2A"
+      ward_or_postcode_prefix: "EC2A"
+  alert_on:
+    line_disruption: true
+    road_congestion_on_commute: true
+```
+
+
+```yaml
+transport:
+  usual_lines: ["central"]
+  areas:
+    - label: "E15"
+      ward_or_postcode_prefix: "E15"
+    - label: "EC2A"
+      ward_or_postcode_prefix: "EC2A"
   alert_on:
     line_disruption: true
     road_congestion_on_commute: true

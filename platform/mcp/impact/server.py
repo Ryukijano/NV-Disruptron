@@ -20,6 +20,7 @@ from mcp.server.fastmcp import FastMCP
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from shared.disruptron_data import (  # noqa: E402
+    _get_ward_disability_pct,
     compute_impact_score,
     find_ward,
     infer_severity_weight,
@@ -44,6 +45,7 @@ mcp = FastMCP(
         "Quantify transport disruption equity and economic exposure across London. "
         "Combines TfL line status/disruptions with IMD deprivation weighting, "
         "population normalization, and borough GVA estimates. "
+        "Accessibility: get_accessibility_risk_snapshot (line status + lift outages + ward disability rates). "
         "Use after fetching live disruption data from the TfL MCP server."
     ),
 )
@@ -318,6 +320,103 @@ async def score_line_disruption_impact(line_id: str) -> dict:
             "severity": "Inferred from TfL status + disruption text",
             "vulnerability": "IMD extent % × deprivation quintile weight",
             "economic": "working_age_pop × severity × borough GVA/job",
+        },
+    }
+
+
+def _has_accessibility_closure(disruptions: list[dict]) -> bool:
+    """Check if any disruption text mentions lift, escalator, step-free, or accessibility."""
+    keywords = {"lift", "escalator", "step free", "step-free", "accessible", "wheelchair", "ramp"}
+    for d in disruptions:
+        text = f"{d.get('description', '')} {d.get('closureText', '')}".lower()
+        if any(kw in text for kw in keywords):
+            return True
+    return False
+
+
+@mcp.tool()
+async def get_accessibility_risk_snapshot(line_id: str) -> dict:
+    """Score accessibility risk for a TfL line using live status + lift outages + ward disability rates.
+
+    This composite tool chains live TfL data with London ward disability/mobility
+    statistics to answer: 'If this line is disrupted, how many mobility-impaired
+    residents are affected, and what's the best alternative?'
+
+    Args:
+        line_id: TfL line ID (e.g. 'jubilee', 'victoria', 'northern', 'elizabeth').
+    """
+    # 1. Line status + disruptions
+    status_list = await _tfl_get(f"/Line/{line_id.strip()}/Status")
+    disruptions = await _tfl_get(f"/Line/{line_id.strip()}/Disruption")
+    line_status = status_list[0] if status_list else {}
+    status_text = " | ".join(
+        ls.get("statusSeverityDescription", "") for ls in line_status.get("lineStatuses", [])
+    )
+    severity = infer_severity_weight(status_text)
+    if disruptions:
+        for d in disruptions:
+            severity = max(severity, infer_severity_weight(
+                d.get("description", ""), d.get("closureText", ""),
+            ))
+
+    # 2. Lift/escalator outages (degraded graceful)
+    lift_outages: dict = {"status": "unknown", "count": 0, "outages": []}
+    try:
+        lifts = await _tfl_get("/Disruptions/Lifts/v2")
+        lift_outages = {
+            "status": "live",
+            "count": len(lifts) if isinstance(lifts, list) else 1,
+            "outages": lifts if isinstance(lifts, list) else [lifts],
+        }
+    except httpx.HTTPStatusError:
+        lift_outages = {
+            "status": "degraded",
+            "message": "TfL lift disruption feed unavailable — checking line disruptions for accessibility closures instead.",
+            "count": 0,
+            "outages": [],
+        }
+
+    accessibility_closure = _has_accessibility_closure(disruptions or [])
+
+    # 3. Wards along the line + disability data
+    wards_on_line = await _wards_along_line(line_id)
+    ward_records: list[dict] = []
+    total_mobility_difficulty_pct = 0.0
+    ward_count_with_data = 0
+
+    for w in wards_on_line:
+        ward = find_ward(w.get("ward_code") or w.get("ward_name", ""))
+        if not ward:
+            continue
+        scored = compute_impact_score(ward, severity)
+        # Enrich with disability/mobility data if available
+        disability_pct = _get_ward_disability_pct(ward.ward_code)
+        scored["mobility_difficulty_pct"] = disability_pct
+        ward_records.append(scored)
+        if disability_pct is not None:
+            total_mobility_difficulty_pct += disability_pct
+            ward_count_with_data += 1
+
+    ward_records.sort(key=lambda x: x["impact_index"], reverse=True)
+    avg_mobility_difficulty = (
+        round(total_mobility_difficulty_pct / ward_count_with_data, 2)
+        if ward_count_with_data else None
+    )
+
+    return {
+        "line_id": line_id,
+        "line_name": line_status.get("name"),
+        "current_status": status_text,
+        "severity_weight": round(severity, 3),
+        "accessibility_closure_on_line": accessibility_closure,
+        "lift_outages": lift_outages,
+        "wards_analysed": len(ward_records),
+        "avg_mobility_difficulty_pct": avg_mobility_difficulty,
+        "top_impacted_wards": ward_records[:10],
+        "methodology": {
+            "severity": "Inferred from TfL status + disruption text (includes accessibility keywords)",
+            "vulnerability": "IMD extent % × deprivation quintile weight + mobility difficulty %",
+            "lift_feed": "TfL /Disruptions/Lifts/v2 (degraded graceful fallback if unavailable)",
         },
     }
 

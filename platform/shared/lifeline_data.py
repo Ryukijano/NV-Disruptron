@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
 IMD_CSV = DATA / "london_wards_imd.csv"
 GVA_CSV = DATA / "borough_gva_per_job.csv"

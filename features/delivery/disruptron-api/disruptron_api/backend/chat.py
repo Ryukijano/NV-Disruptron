@@ -167,17 +167,19 @@ class ChatProxy:
             await self._prefetch_briefing(on_stream)
 
         reply: str | None = None
+        tool_kinds: list[str] = []
+
         if self._chat_mode in {"auto", "http"} and not self._http_backend_is_self():
             reply = await self._ask_http(turn)
 
         if reply is None and self._chat_mode in {"auto", "agent"}:
-            from disruptron_api.events import chat_tool_sse
+            from disruptron_api.events import chat_tool_sse, chat_panel_sse, chat_route_sse
 
             await self._emit(
                 on_stream,
                 chat_tool_sse(f"openclaw:{decision.agent_id}", "start", decision.reason),
             )
-            reply = await self._agent.ask(
+            agent_result = await self._agent.ask(
                 AgentTurn(
                     channel=turn.channel,
                     chat_id=turn.chat_id,
@@ -186,10 +188,57 @@ class ChatProxy:
                 ),
                 agent_id=decision.agent_id,
             )
+            reply = agent_result.reply
+            tool_kinds = agent_result.tool_kinds
             await self._emit(
                 on_stream,
                 chat_tool_sse(f"openclaw:{decision.agent_id}", "done"),
             )
+            # Emit panel events for each detected tool kind → drives frontend tactical cards + camera panning
+            panel_titles: dict[str, str] = {
+                "disruption": "Live Disruptions",
+                "route": "Route Planning",
+                "station": "Station Info",
+                "video": "Video Analysis",
+                "live": "Live Cameras",
+                "audio": "Audio Analysis",
+                "hazard": "Hazard Map",
+            }
+            for kind in tool_kinds:
+                title = panel_titles.get(kind, kind.replace("_", " ").title())
+                await self._emit(on_stream, chat_panel_sse(kind, title, ttl_ms=20000))
+
+            # If route planning detected, fetch real TfL coordinates and emit route SSE
+            if "route" in tool_kinds:
+                import re
+                user_text = turn.text
+                m = re.search(r"from\s+(.+?)\s+to\s+(.+?)(?:\?|$|\s+by\s+|\s+via\s+)", user_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"(?:directions?|route)\s+(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\?|$)", user_text, re.IGNORECASE)
+                if m:
+                    origin = m.group(1).strip()
+                    destination = m.group(2).strip()
+                    try:
+                        route_data = await self._agent._mcp_route(origin, destination, "transit")
+                        if route_data.get("ok"):
+                            route = route_data["route"]
+                            steps = route.get("steps", [])
+                            coords: list[list[float]] = []
+                            for step in steps:
+                                # Collect start + end of each leg as waypoints
+                                start = step.get("start_location")
+                                end = step.get("end_location")
+                                if start and len(coords) == 0:
+                                    coords.append([start["lng"], start["lat"]])
+                                if end:
+                                    coords.append([end["lng"], end["lat"]])
+                            if coords:
+                                await self._emit(
+                                    on_stream,
+                                    chat_route_sse("route", f"{origin} to {destination}", coords, ttl_ms=30000),
+                                )
+                    except Exception as exc:
+                        logger.warning("route coordinate emission failed: %s", exc)
 
         if reply is None:
             reply = BACKEND_UNAVAILABLE

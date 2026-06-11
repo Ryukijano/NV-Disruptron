@@ -6,6 +6,9 @@ import { NotificationsProvider } from "@/providers/NotificationsProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
 import { SubscriptionsProvider } from "@/providers/SubscriptionsProvider";
 import { SummariesProvider } from "@/providers/SummariesProvider";
+import { MapStateProvider } from "@/providers/MapStateProvider";
+import { TacticalPanelProvider } from "@/providers/TacticalPanelProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppRoutes } from "@/routes/AppRoutes";
 
 export default function App() {
@@ -17,9 +20,15 @@ export default function App() {
             <NotificationsProvider>
               <SubscriptionsProvider>
                 <AgentUiProvider>
-                  <BrowserRouter>
-                    <AppRoutes />
-                  </BrowserRouter>
+                  <MapStateProvider>
+                    <TacticalPanelProvider>
+                      <BrowserRouter>
+                        <ErrorBoundary>
+                          <AppRoutes />
+                        </ErrorBoundary>
+                      </BrowserRouter>
+                    </TacticalPanelProvider>
+                  </MapStateProvider>
                 </AgentUiProvider>
               </SubscriptionsProvider>
             </NotificationsProvider>

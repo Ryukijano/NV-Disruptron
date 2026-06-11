@@ -52,18 +52,18 @@ export function TextInputBar({ disabled, onSend }: TextInputBarProps) {
           }
         }}
         classNames={{
-          inputWrapper: "border-2 border-slate-200 bg-white shadow-sm",
+          inputWrapper: "border border-white/10 bg-[#0d1117]/60 hover:border-cyan-neon/40 focus-within:border-cyan-neon/60 shadow-sm text-text font-sans",
+          input: "text-text placeholder:text-muted",
         }}
       />
       <Button
         isIconOnly
-        color="primary"
-        className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shrink-0 min-w-11"
+        className="bg-cyan-neon text-obsidian hover:bg-cyan-neon/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shrink-0 min-w-11 shadow-[0_0_15px_rgba(102,252,241,0.3)] font-mono"
         isDisabled={disabled || (!text.trim() && !image)}
         onPress={submit}
         aria-label="Send message"
       >
-        <Send size={20} strokeWidth={1.75} color="#ffffff" />
+        <Send size={20} strokeWidth={2} color="#08090C" />
       </Button>
     </div>
   );
