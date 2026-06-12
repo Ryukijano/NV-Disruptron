@@ -1,0 +1,33 @@
+define user ask off topic
+  "What is the meaning of life?"
+  "Tell me a joke"
+  "Help me with my homework"
+  "Write a poem"
+  "What do you think about politics?"
+  "Who should I vote for?"
+  "Help me with medical advice"
+  "I need legal advice"
+  "Tell me about stocks"
+  "What cryptocurrency should I buy?"
+
+define bot inform off topic
+  "I'm designed to help with London mobility, transport, EV charging, and accessibility. For other topics, please consult the appropriate service."
+
+define flow
+  user ask off topic
+  bot inform off topic
+
+define user ask about london mobility
+  "How do I get from A to B?"
+  "What is the tube status?"
+  "Where can I charge my EV?"
+  "Is there flooding on this road?"
+  "Show me CCTV cameras"
+  "Plan a route"
+  "What is the air quality?"
+  "Any road closures?"
+  "Find the nearest accessible station"
+  "Where is the step-free access?"
+
+define bot respond about london mobility
+  "I can help with that. Let me check the live data for you."

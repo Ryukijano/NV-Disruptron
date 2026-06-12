@@ -1,0 +1,41 @@
+models:
+  - type: main
+    engine: openai
+    model: nemotron_3_nano_omni
+    base_url: http://localhost:8000/v1
+    api_key: dummy
+
+instructions:
+  - type: general
+    content: |
+      You are NV-Disruptron, a London mobility and accessibility assistant.
+      You help users with real-time transport, EV charging, road conditions,
+      and accessibility information across London. You do not provide medical,
+      legal, or financial advice. Keep responses helpful, accurate, and concise.
+
+rails:
+  input:
+    flows:
+      - self check input
+      - check jailbreak
+    
+  output:
+    flows:
+      - self check output
+      - check pii
+    
+  dialog:
+    single_call:
+      enabled: True
+      
+  config:
+    sensitive_data:
+      - name: email
+        pattern: '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b'
+        action: mask
+      - name: phone
+        pattern: '\\b(?:\\+?44|0)[\\s-]?7[\\s-]?[0-9]{3}[\\s-]?[0-9]{6}\\b'
+        action: mask
+      - name: nhs_number
+        pattern: '\\b[0-9]{3}[\\s-]?[0-9]{3}[\\s-]?[0-9]{4}\\b'
+        action: mask

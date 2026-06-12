@@ -6,16 +6,22 @@ NV-Disruptron runs **24/7**, watches live TfL, EV charging, and CCTV feeds, and 
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **Dynamic Route Planning** | Ask "route me from X to Y" — fetches live TfL journey plans and streams route coordinates to the map |
-| **CCTV Monitoring** | Browse 200+ TfL JamCams, click to analyze with **LocateAnything-3B** for real-time object detection (cars, buses, pedestrians, bicycles) |
-| **Video Stream Analysis** | Temporal object tracking across sampled frames — filters out transient objects, keeps persistent detections |
-| **GPU-Optimized Inference** | Both **LocateAnything-3B** and **Nemotron Omni** run on GPU simultaneously (~48 GB / 128 GB) |
-| **Parallel Box Decoding** | LocateAnything uses **hybrid PBD** — parallel block decoding for speed, AR fallback for accuracy |
-| **RAPIDS GPU Analytics** | cuDF ETL, cuSpatial joins, cuGraph network analysis, cuML clustering on live hazard data |
-| **24/7 Autonomous Monitor** | Proactive alerts via text + ElevenLabs voice when conditions change |
-| **OpenClaw Agent** | Natural language chat with multimodal reasoning (text, image, audio) via Nemotron Omni |
+| Feature | Description | NVIDIA Tech |
+|---------|-------------|-------------|
+| **Dynamic Route Planning** | Ask "route me from X to Y" — fetches live TfL journey plans and streams route coordinates to the map | — |
+| **CCTV Monitoring** | Browse 200+ TfL JamCams, click to analyze with **LocateAnything-3B** for real-time object detection | **LocateAnything-3B** |
+| **Video Stream Analysis** | Temporal object tracking across sampled frames — filters out transient objects, keeps persistent detections | **LocateAnything-3B** |
+| **GPU-Optimized Inference** | Both **LocateAnything-3B** and **Nemotron Omni** run on GPU simultaneously (~48 GB / 128 GB) | **vLLM** |
+| **Parallel Box Decoding** | LocateAnything uses **hybrid PBD** — parallel block decoding for speed, AR fallback for accuracy | **LocateAnything-3B** |
+| **RAPIDS GPU Analytics** | cuDF ETL, cuSpatial joins, cuGraph network analysis, cuML clustering on live hazard data | **RAPIDS** (cuDF, cuSpatial, cuGraph, cuML) |
+| **GPU Vector Search RAG** | Ingest TfL guides + accessibility docs → query with GPU-accelerated retrieval (cuVS CAGRA) | **NeMo Retriever** + **cuVS** |
+| **Hazard-Response Routing** | Plan optimal crew dispatch routes from depots to live hazards using VRP | **cuOpt** |
+| **Causal Video Reasoning** | Upload CCTV clips for causal analysis: "Why did the crowd form?" | **Cosmos Reason 2** |
+| **Privacy-First Voice** | Local ASR + TTS — zero cloud voice data exposure, PII stripped before speech | **Riva NIM** (ASR + TTS) |
+| **Agent Safety** | Topic rails (mobility only), jailbreak detection, PII output masking | **NeMo Guardrails** |
+| **Agent Orchestration** | Multi-step workflows with profiling, fallback chains, GPU telemetry | **NeMo Agent Toolkit (NAT)** |
+| **24/7 Autonomous Monitor** | Proactive alerts via text + ElevenLabs voice when conditions change | — |
+| **OpenClaw Agent** | Natural language chat with multimodal reasoning (text, image, audio) via Nemotron Omni | **Nemotron 3 Nano Omni** |
 
 ## Quick Start
 
@@ -55,11 +61,23 @@ uv run python disruptron_api/main.py
 
 Backend serves on port **8010** with endpoints:
 - `POST /v1/chat/stream` — chat with the agent (SSE streaming)
-- `POST /v1/livefeed/cameras/{id}/analyze` — single-frame object detection
+- `POST /v1/livefeed/cameras/{id}/analyze` — single-frame object detection (LocateAnything-3B)
 - `POST /v1/livefeed/cameras/{id}/stream` — temporal video stream analysis
 - `GET /v1/livefeed/cameras` — list all TfL JamCams
 - `GET /v1/geo/hazards` — GeoJSON hazard map data
-- `POST /v1/geo/hazards/cluster` — GPU DBSCAN clustering (RAPIDS)
+- `POST /v1/geo/hazards/cluster` — GPU DBSCAN clustering (RAPIDS cuML)
+- `POST /v1/routing/hazard-response` — cuOpt VRP crew dispatch routes
+- `GET /v1/routing/depots` — response depot locations
+- `POST /v1/rag/query` — GPU vector search RAG query
+- `POST /v1/rag/ingest` — ingest documents into RAG
+- `GET /v1/rag/stats` — RAG index statistics
+- `POST /v1/vision/cosmos-reason` — Cosmos Reason 2 video causal analysis
+- `POST /v1/voice/transcribe` — Riva ASR (local privacy)
+- `POST /v1/voice/synthesize` — Riva TTS (PII-safe)
+- `GET /v1/voice/status` — Riva NIM health
+- `POST /v1/agent/workflow` — NAT multi-step agent workflow
+- `GET /v1/agent/traces` — agent profiling traces
+- `GET /v1/agent/tools` — registered tools + fallback chains
 
 ### 4. Start Frontend
 
@@ -125,11 +143,26 @@ Vision Pipeline
   ├── live_feed_pipeline.py      — TfL JamCam registry + snapshot fetch
   └── video_pipeline.py          — Video analysis (separate from CCTV)
 
-GPU Layer (RAPIDS)
-  ├── cudf_etl.py       — GPU-accelerated data processing
-  ├── cuspatial_join.py — Spatial joins on hazard data
-  ├── cugraph_network.py— Network analysis
-  └── cuml_clustering.py— DBSCAN clustering
+NVIDIA GPU Software Suite
+  ├── Vision
+  │   ├── locate_anything_client.py  — LocateAnything-3B (PBD hybrid mode)
+  │   ├── cosmos_reason.py             — Cosmos Reason 2 video causal reasoning
+  │   └── dali_pipeline.py             — DALI GPU JPEG decode for CCTV frames
+  ├── Safety
+  │   └── guardrails/                  — NeMo Guardrails (topic + jailbreak + PII)
+  ├── Routing
+  │   └── cuopt_routing.py             — cuOpt VRP for hazard-response crews
+  ├── RAG
+  │   └── rag_engine.py                — NeMo Retriever style (cuVS GPU vector search)
+  ├── Voice
+  │   └── riva_voice.py                — Riva NIM ASR + TTS (local, PII-safe)
+  ├── Analytics
+  │   ├── cudf_etl.py                  — GPU-accelerated data processing (RAPIDS)
+  │   ├── cuspatial_join.py            — Spatial joins on hazard data
+  │   ├── cugraph_network.py           — Network analysis
+  │   └── cuml_clustering.py           — DBSCAN clustering
+  └── Orchestration
+      └── nat_orchestrator.py          — NeMo Agent Toolkit (workflows + profiling)
 
 MCP Servers
   ├── transport/        — TfL journey planner + live disruption data

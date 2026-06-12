@@ -89,6 +89,7 @@ class ChatProxy:
         autonomous_agent_id: str = "disruptron",
         agent_local: bool = True,
         own_port: int | None = None,
+        use_guardrails: bool = True,
     ) -> None:
         self._backend_url = backend_url.rstrip("/")
         self._url = f"{self._backend_url}{chat_path}"
@@ -100,6 +101,16 @@ class ChatProxy:
             agent_id=agent_id, timeout_s=timeout_s, local=agent_local
         )
         self._own_port = own_port
+        self._guardrails = None
+        if use_guardrails:
+            try:
+                from nemoguardrails import RailsConfig, LLMRails
+                rails_path = str(Path(__file__).parent.parent.parent / "features" / "agent" / "guardrails")
+                config = RailsConfig.from_path(rails_path)
+                self._guardrails = LLMRails(config, verbose=False)
+                logger.info("NeMo Guardrails loaded from %s", rails_path)
+            except Exception as exc:
+                logger.warning("NeMo Guardrails load failed: %s", exc)
 
     def _http_backend_is_self(self) -> bool:
         if self._own_port is None:
@@ -148,6 +159,28 @@ class ChatProxy:
         on_stream: StreamCallback | None = None,
     ) -> WebChatResponse:
         turn = _normalize(request)
+
+        # ── NeMo Guardrails input check ──
+        if self._guardrails is not None:
+            try:
+                gr_result = await self._guardrails.generate_async(
+                    messages=[{"role": "user", "content": turn.text}],
+                    return_context=True,
+                )
+                if gr_result.get("bot_message"):
+                    # Guardrails blocked the input (off-topic, jailbreak, etc.)
+                    record_user_message(turn.channel, turn.chat_id, turn.text)
+                    record_assistant_message(
+                        turn.channel, turn.chat_id, gr_result["bot_message"]
+                    )
+                    return WebChatResponse(
+                        reply=gr_result["bot_message"],
+                        route="guardrails",
+                        agent_id="guardrails",
+                    )
+            except Exception as exc:
+                logger.warning("Guardrails check failed: %s", exc)
+
         record_user_message(turn.channel, turn.chat_id, turn.text)
 
         from disruptron_api.events import chat_mode_sse

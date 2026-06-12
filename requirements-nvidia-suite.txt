@@ -1,0 +1,61 @@
+# NV-Disruptron — Full NVIDIA Software Suite Dependencies
+# Install: uv pip install -r requirements-nvidia-suite.txt
+
+# ── Core ──
+torch>=2.6.0
+torchvision>=0.21.0
+transformers>=4.50.0
+accelerate>=1.5.0
+Pillow>=11.0.0
+numpy>=2.0.0
+httpx>=0.28.0
+fastapi>=0.115.0
+uvicorn>=0.34.0
+pydantic>=2.10.0
+python-multipart>=0.0.20
+
+# ── Vision ──
+# LocateAnything-3B (loaded via HuggingFace; no extra pip package)
+# Cosmos Reason 2 (via NIM endpoint or local model path)
+
+# ── DALI (GPU JPEG decode) ──
+nvidia-dali-cuda120>=2.1.0
+
+# ── Safety ──
+nemoguardrails>=0.22.0
+
+# ── Routing ──
+cuopt-server-cu13>=24.12.0
+cuopt-sh-client>=24.12.0
+
+# ── RAG (GPU vector search) ──
+# cuVS (RAPIDS) — installed via conda or pip if available
+cuvs-cu13>=24.12.0
+faiss-cpu>=1.10.0  # fallback
+
+# ── Voice ──
+# Riva NIM is self-hosted via Docker; client uses HTTP
+# riva-client>=2.18.0  # optional Python client
+
+# ── Analytics (RAPIDS) ──
+cudf-cu13>=24.12.0
+cuspatial-cu13>=24.12.0
+cugraph-cu13>=24.12.0
+cuml-cu13>=24.12.0
+
+# ── Agent / Embed ──
+# Nemotron 3 Nano Omni served via vLLM
+# Llama-Nemotron Embed served via vLLM --task embed
+vllm>=0.11.0
+openai>=1.65.0
+
+# ── Orchestration ──
+# NeMo Agent Toolkit — via pip if available
+# nemo-skills>=0.5.0  # optional
+
+# ── Utilities ──
+maplibre-gl-js  # frontend, via npm
+pyyaml>=6.0.0
+aiofiles>=24.1.0
+geopandas>=1.0.0
+shapely>=2.0.0

@@ -1298,4 +1298,211 @@ def create_app(
             logger.warning("tfl road disruptions failed: %s", exc)
             return {"disruptions": [], "count": 0, "source": "tfl_api", "error": str(exc)}
 
+    # --- NVIDIA cuOpt VRP for hazard-response crew routing ---
+    @app.post("/v1/routing/hazard-response")
+    async def plan_hazard_response_routes_endpoint(
+        hazard_ids: list[str] | None = Query(None),
+        max_vehicles: int = Query(3, ge=1, le=10),
+        vehicle_capacity: int = Query(5, ge=1, le=20),
+    ) -> dict:
+        """Plan optimal crew dispatch routes from depots to hazards using NVIDIA cuOpt VRP.
+
+        Reads open hazards from the hazard database + known London response depots
+        and returns ordered waypoints per vehicle. Falls back to greedy nearest-
+        neighbour if cuOpt is unavailable.
+        """
+        from platform.shared.gpu.cuopt_routing import plan_hazard_response_routes
+
+        ids = None
+        if hazard_ids:
+            try:
+                ids = [int(h) for h in hazard_ids]
+            except ValueError:
+                raise HTTPException(status_code=400, detail="hazard_ids must be integers")
+
+        result = plan_hazard_response_routes(
+            hazard_ids=ids,
+            max_vehicles=max_vehicles,
+            vehicle_capacity=vehicle_capacity,
+        )
+        return result
+
+    @app.get("/v1/routing/depots")
+    def list_response_depots() -> list[dict]:
+        """Return known London response depot locations for VRP routing."""
+        from platform.shared.gpu.cuopt_routing import _load_depots
+        depots = _load_depots()
+        return depots
+
+    # --- NVIDIA RAG (NeMo Retriever style) endpoints ---
+    @app.post("/v1/rag/query")
+    async def rag_query(
+        query: str = Query(..., min_length=1, max_length=8000),
+        top_k: int = Query(5, ge=1, le=20),
+    ) -> dict:
+        """Query the RAG knowledge base for London mobility/accessibility info.
+
+        Uses GPU-accelerated vector search (cuVS) when available,
+        falling back to FAISS-CPU or brute-force.
+        """
+        from platform.shared.gpu.rag_engine import get_rag_engine
+
+        engine = get_rag_engine()
+        engine.top_k = top_k
+        return engine.query(query)
+
+    @app.post("/v1/rag/ingest")
+    async def rag_ingest(body: list[dict]) -> dict:
+        """Ingest documents into the RAG vector store.
+
+        Body: list of {"text": "...", "source": "...", "metadata": {}} objects.
+        """
+        from platform.shared.gpu.rag_engine import get_rag_engine
+
+        engine = get_rag_engine()
+        engine.add_documents(body)
+        return {"status": "ingested", "count": len(body)}
+
+    @app.get("/v1/rag/stats")
+    def rag_stats() -> dict:
+        """Return RAG index statistics."""
+        import sqlite3
+        from platform.shared.gpu.rag_engine import RAG_DB, GPU_VS_AVAILABLE, FAISS_AVAILABLE
+
+        chunk_count = 0
+        query_count = 0
+        if RAG_DB.exists():
+            with sqlite3.connect(RAG_DB) as conn:
+                row = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()
+                chunk_count = row[0] if row else 0
+                row = conn.execute("SELECT COUNT(*) FROM queries").fetchone()
+                query_count = row[0] if row else 0
+
+        return {
+            "chunks": chunk_count,
+            "queries": query_count,
+            "gpu_accelerated": GPU_VS_AVAILABLE,
+            "gpu_backend": "cuVS (RAPIDS CAGRA)" if GPU_VS_AVAILABLE else ("FAISS" if FAISS_AVAILABLE else "brute-force"),
+            "embedding_model": "llama-nemotron-embed",
+        }
+
+    # --- NVIDIA Cosmos Reason 2 video reasoning endpoint ---
+    @app.post("/v1/vision/cosmos-reason")
+    async def cosmos_reason_clip(
+        video: UploadFile = File(...),
+        question: str = Query("Describe what is happening in this video clip."),
+    ) -> dict:
+        """Run Cosmos Reason 2 video reasoning on a CCTV clip.
+
+        Upload a short MP4 clip (5-15 seconds) for causal video analysis:
+        crowd formation, flooding progression, accident causation, etc.
+        Falls back to Nemotron Omni on first frame if Cosmos unavailable.
+        """
+        from platform.shared.gpu.cosmos_reason import get_cosmos_client
+        import tempfile
+
+        suffix = Path(video.filename).suffix or ".mp4"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(await video.read())
+            tmp_path = tmp.name
+
+        client = get_cosmos_client()
+        result = client.analyze_clip(tmp_path, question=question)
+        Path(tmp_path).unlink(missing_ok=True)
+        return result
+
+    # --- NVIDIA Riva voice (ASR + TTS) endpoints ---
+    @app.post("/v1/voice/transcribe")
+    async def riva_transcribe(
+        audio: UploadFile = File(...),
+        sample_rate: int = Query(16000),
+    ) -> dict:
+        """ASR: Transcribe uploaded audio using Riva NIM (privacy-first, local)."""
+        from platform.shared.gpu.riva_voice import get_riva_client
+
+        client = get_riva_client()
+        audio_bytes = await audio.read()
+        return client.transcribe(audio_bytes, sample_rate=sample_rate)
+
+    @app.post("/v1/voice/synthesize")
+    async def riva_synthesize(
+        text: str = Query(..., min_length=1, max_length=2000),
+        voice: str = Query("English-GB.Female"),
+        severity: str = Query("info"),
+    ) -> dict:
+        """TTS: Synthesize speech from text using Riva NIM.
+
+        PII is automatically stripped before synthesis.
+        Severity controls voice persona (info/warning/critical).
+        """
+        from platform.shared.gpu.riva_voice import get_riva_client
+
+        client = get_riva_client()
+        if severity in ("warning", "critical"):
+            return client.synthesize_alert(text, severity=severity)
+        return client.synthesize(text, voice=voice)
+
+    @app.get("/v1/voice/status")
+    def riva_status() -> dict:
+        """Check Riva ASR + TTS NIM availability."""
+        from platform.shared.gpu.riva_voice import get_riva_client
+
+        client = get_riva_client()
+        return {
+            **client.is_available(),
+            "note": "Self-hosted Riva NIM for zero-cloud voice privacy.",
+        }
+
+    # --- NeMo Agent Toolkit (NAT) orchestration endpoints ---
+    @app.post("/v1/agent/workflow")
+    async def agent_run_workflow(
+        workflow: str = Query(..., description="hazard_response | accessibility_query | live_monitor"),
+        camera_id: str | None = Query(None),
+        labels: list[str] | None = Query(None),
+        query: str | None = Query(None),
+        video_path: str | None = Query(None),
+        question: str | None = Query(None),
+    ) -> dict:
+        """Run a multi-step agent workflow with full profiling and fallback chains.
+
+        Workflows:
+        - hazard_response: detect → route → alert
+        - accessibility_query: rag → voice response
+        - live_monitor: detect + cosmos reason loop
+        """
+        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+
+        nat = get_nat_orchestrator()
+        inputs = {
+            "camera_id": camera_id,
+            "labels": labels or ["flooding", "pavement_obstruction"],
+            "query": query,
+            "video_path": video_path,
+            "question": question,
+        }
+        # Filter out None values
+        inputs = {k: v for k, v in inputs.items() if v is not None}
+        return nat.run_workflow(workflow, inputs)
+
+    @app.get("/v1/agent/traces")
+    def agent_get_traces(
+        limit: int = Query(100, ge=1, le=1000),
+    ) -> list[dict]:
+        """Return recent agent workflow traces with latency + GPU memory."""
+        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+
+        nat = get_nat_orchestrator()
+        return nat.get_traces(limit=limit)
+
+    @app.get("/v1/agent/tools")
+    def agent_list_tools() -> dict:
+        """List registered NAT tools and fallback chains."""
+        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+
+        nat = get_nat_orchestrator()
+        return {
+            "tools": list(nat.tool_registry.keys()),
+            "fallback_chains": nat.fallback_chains,
+        }
+
     return app
