@@ -9,7 +9,7 @@ NV-Disruptron runs **24/7**, watches live TfL, EV charging, and CCTV feeds, and 
 | Feature | Description | NVIDIA Tech |
 |---------|-------------|-------------|
 | **Dynamic Route Planning** | Ask "route me from X to Y" — fetches live TfL journey plans and streams route coordinates to the map | — |
-| **CCTV Monitoring** | Browse 200+ TfL JamCams, click to analyze with **LocateAnything-3B** for real-time object detection | **LocateAnything-3B** |
+| **CCTV Monitoring** | Browse 200+ TfL JamCams, click to analyze — or let the agent trigger **LocateAnything-3B** on-demand when your chat query matches a location/hazard | **LocateAnything-3B** |
 | **Video Stream Analysis** | Temporal object tracking across sampled frames — filters out transient objects, keeps persistent detections | **LocateAnything-3B** |
 | **GPU-Optimized Inference** | Both **LocateAnything-3B** and **Nemotron Omni** run on GPU simultaneously (~48 GB / 128 GB) | **vLLM** |
 | **Parallel Box Decoding** | LocateAnything uses **hybrid PBD** — parallel block decoding for speed, AR fallback for accuracy | **LocateAnything-3B** |
@@ -20,7 +20,7 @@ NV-Disruptron runs **24/7**, watches live TfL, EV charging, and CCTV feeds, and 
 | **Privacy-First Voice** | Local ASR + TTS — zero cloud voice data exposure, PII stripped before speech | **Riva NIM** (ASR + TTS) |
 | **Agent Safety** | Topic rails (mobility only), jailbreak detection, PII output masking | **NeMo Guardrails** |
 | **Agent Orchestration** | Multi-step workflows with profiling, fallback chains, GPU telemetry | **NeMo Agent Toolkit (NAT)** |
-| **24/7 Autonomous Monitor** | Proactive alerts via text + ElevenLabs voice when conditions change | — |
+| **24/7 Autonomous Monitor** | Proactive alerts via text + ElevenLabs voice when conditions change. Watcher loop + on-demand chat detection | — |
 | **OpenClaw Agent** | Natural language chat with multimodal reasoning (text, image, audio) via Nemotron Omni | **Nemotron 3 Nano Omni** |
 
 ## Quick Start
@@ -105,6 +105,22 @@ Or install as systemd user service:
 systemctl --user enable --now nv-disruptron.service
 ```
 
+## Hardware
+
+NV-Disruptron was built and tested on the **NVIDIA DGX Spark** — a personal AI supercomputer powered by the **GB10 Grace Blackwell Superchip** with **128 GB of unified memory** and up to **1 petaFLOP of FP4 AI performance**.
+
+The entire stack (vLLM Nemotron, LocateAnything-3B, RAPIDS GPU analytics, cuOpt routing, Riva voice) runs on a **single desktop box** with zero cloud dependency for inference.
+
+| Component | DGX Spark Spec |
+|-----------|---------------|
+| GPU | NVIDIA GB10 Grace Blackwell |
+| Unified Memory | 128 GB |
+| AI Performance | Up to 1 petaFLOP (FP4) |
+| NVMe SSD | 4 TB |
+| OS | DGX OS (Ubuntu-based) |
+
+Every GPU-accelerated module has a CPU fallback (pandas, geopandas, networkx, sklearn), so NV-Disruptron degrades gracefully on non-GPU hardware.
+
 ## LocateAnything-3B Setup
 
 LocateAnything-3B is a 3B-parameter vision-language model with **Parallel Box Decoding (PBD)**. It runs alongside vLLM Nemotron on the same GPU.
@@ -175,6 +191,18 @@ MCP Servers
 Pair OpenClaw mobile app → Talk Mode for hands-free voice interaction. The agent processes voice via ElevenLabs Scribe → Nemotron Omni multimodal reasoning.
 
 Edit `features/agent/workspace/USER.md` with your EV/commute areas (kept private in voice output — no PII is ever sent to TTS).
+
+## Community & Cloud Deployment
+
+**Hugging Face Space** — A community cloud deployment is in progress so anyone can run NV-Disruptron without a DGX Spark.
+
+**Model Templates** — The repo includes swap-in templates for other small NVIDIA Nemotron models:
+- `Nemotron-3-Nano-3B` — lightweight, faster inference
+- `Nemotron-3-Nano-30B-A3B` — higher reasoning quality
+
+Swap the model name in `scripts/start_vllm_backend.sh` and the `NEMOTRON_MODEL` env var. vLLM handles the rest.
+
+**NVIDIA Developer Blog** — A deep-dive write-up on architecture, agent design, and how to adapt NV-Disruptron for other cities is in the works. Follow the repo for updates.
 
 ## License
 

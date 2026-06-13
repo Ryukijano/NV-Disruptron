@@ -39,3 +39,6 @@ nemoclaw/workspace/memory/
 
 # OpenClaw local state (outside repo, but ignore if symlinked)
 .openclaw/
+
+# SQLite runtime databases
+features/delivery/disruptron-api/data/*.db
