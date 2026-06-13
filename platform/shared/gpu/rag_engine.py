@@ -5,7 +5,7 @@ FAISS-CPU if cuVS is unavailable. Embeddings via Llama-Nemotron Embed or
 OpenAI-compatible embed endpoint.
 
 Usage:
-    from platform.shared.gpu.rag_engine import RAGEngine
+    from shared.gpu.rag_engine import RAGEngine
     rag = RAGEngine()
     rag.add_documents([{"text": "TfL Step-Free Access Guide...", "source": "tfl"}])
     results = rag.query("Where can I find step-free tube stations?")

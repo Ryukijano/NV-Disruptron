@@ -11,7 +11,7 @@ Unlike plain LangGraph, NAT gives:
 - Agent-to-agent delegation patterns
 
 Usage:
-    from platform.shared.gpu.nat_orchestrator import NATOrchestrator
+    from shared.gpu.nat_orchestrator import NATOrchestrator
     nat = NATOrchestrator()
     result = nat.run_workflow("hazard_response", {"camera_id": "jamcam_001", "labels": ["flooding"]})
 """
@@ -113,7 +113,7 @@ class NATOrchestrator:
 
     def _tool_plan_routes(self, hazard_ids: list[int], max_vehicles: int = 3) -> dict:
         """Run cuOpt VRP for hazard response routing."""
-        from platform.shared.gpu.cuopt_routing import plan_hazard_response_routes
+        from shared.gpu.cuopt_routing import plan_hazard_response_routes
         return plan_hazard_response_routes(
             hazard_ids=hazard_ids if hazard_ids else None,
             max_vehicles=max_vehicles,
@@ -121,20 +121,20 @@ class NATOrchestrator:
 
     def _tool_query_rag(self, query: str, top_k: int = 5) -> dict:
         """Query RAG knowledge base."""
-        from platform.shared.gpu.rag_engine import get_rag_engine
+        from shared.gpu.rag_engine import get_rag_engine
         engine = get_rag_engine()
         engine.top_k = top_k
         return engine.query(query)
 
     def _tool_synthesize_alert(self, text: str, severity: str = "info") -> dict:
         """Synthesize voice alert via Riva."""
-        from platform.shared.gpu.riva_voice import get_riva_client
+        from shared.gpu.riva_voice import get_riva_client
         client = get_riva_client()
         return client.synthesize_alert(text, severity=severity)
 
     def _tool_analyze_cosmos(self, video_path: str, question: str) -> dict:
         """Run Cosmos Reason 2 on a video clip."""
-        from platform.shared.gpu.cosmos_reason import get_cosmos_client
+        from shared.gpu.cosmos_reason import get_cosmos_client
         client = get_cosmos_client()
         return client.analyze_clip(video_path, question=question)
 

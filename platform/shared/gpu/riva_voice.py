@@ -6,7 +6,7 @@ Self-hosted Riva NIM containers (ASR + TTS) on DGX Spark give:
 - Custom voice persona (disruptron-public)
 
 Usage:
-    from platform.shared.gpu.riva_voice import RivaVoiceClient
+    from shared.gpu.riva_voice import RivaVoiceClient
     client = RivaVoiceClient()
     text = client.transcribe(audio_bytes)
     audio = client.synthesize("Bus stop closed due to flooding", voice="English-US.Male")

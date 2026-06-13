@@ -12,6 +12,7 @@ import { TextInputBar } from "@/components/live/TextInputBar";
 import { GeminiVisualizer } from "@/components/live/GeminiVisualizer";
 import { TacticalCard } from "@/components/tactical/TacticalCard";
 import { VideoDetectionOverlay } from "@/components/tactical/VideoDetectionOverlay";
+import { DetectionOverlay } from "@/components/vision/DetectionOverlay";
 import { useTacticalPanels, type TacticalPanelKind } from "@/providers/TacticalPanelProvider";
 import { FlowParticleLayer } from "@/lib/flowLayer";
 
@@ -129,6 +130,7 @@ export function MapPage() {
     setShowDisruptionAlert,
     routeCoordinates,
     setRouteCoordinates,
+    detectionFeed,
   } = useMapState();
 
   // Active AI Link session hooks
@@ -625,6 +627,77 @@ export function MapPage() {
     });
   }, [showDisruptionAlert, loading]);
 
+  // Detection popups: render markers + popups on map for each detection in feed
+  const detectionMarkersRef = useRef<Record<string, maplibregl.Marker>>({});
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loading) return;
+    const now = Date.now();
+    const active = detectionFeed.filter((d) => d.expiresAt > now);
+    const currentIds = new Set(active.map((d) => d.cameraId));
+
+    // Remove expired markers
+    for (const [id, marker] of Object.entries(detectionMarkersRef.current)) {
+      if (!currentIds.has(id)) {
+        marker.remove();
+        delete detectionMarkersRef.current[id];
+      }
+    }
+
+    for (const d of active) {
+      if (detectionMarkersRef.current[d.cameraId]) continue;
+      const el = document.createElement("div");
+      el.className = "detection-marker";
+      el.style.cssText = "width:14px;height:14px;border-radius:50%;background:#22D3EE;border:2px solid #fff;box-shadow:0 0 8px #22D3EE;cursor:pointer;";
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([d.lon, d.lat]).addTo(map);
+      // Build popup HTML with bounding boxes
+      const bboxOverlays = d.detections.map((det: any) => {
+        const [x1, y1, x2, y2] = det.bbox;
+        const left = x1 * 100;
+        const top = y1 * 100;
+        const width = (x2 - x1) * 100;
+        const height = (y2 - y1) * 100;
+        const colors: Record<string, string> = {
+          car: "#0EA5E9", bus: "#8B5CF6", person: "#10B981", bicycle: "#F59E0B",
+          truck: "#EC4899", van: "#6366F1", motorcycle: "#F97316", unknown: "#9CA3AF",
+        };
+        const color = colors[det.label] || colors.unknown;
+        return `<div style="position:absolute;left:${left}%;top:${top}%;width:${width}%;height:${height}%;border:2px solid ${color};border-radius:2px;box-shadow:0 0 4px ${color}66;">
+          <span style="position:absolute;top:-14px;left:0;background:${color};color:#fff;font-size:8px;padding:1px 3px;border-radius:2px;white-space:nowrap;">${det.label}</span>
+        </div>`;
+      }).join("");
+
+      const popup = new maplibregl.Popup({ maxWidth: "280px" }).setHTML(
+        `<div style="font-family:sans-serif;font-size:11px;color:#eee;background:#121214;border-radius:8px;padding:8px;">
+          <div style="font-weight:600;margin-bottom:4px;color:#22D3EE;">${d.cameraName}</div>
+          <div style="position:relative;width:240px;border-radius:6px;overflow:hidden;margin-bottom:6px;">
+            <img src="${d.imageUrl}" style="width:100%;height:auto;display:block;" />
+            ${bboxOverlays}
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            ${d.detections.map((det: any) => `<span style="background:#1E293B;border-radius:4px;padding:2px 6px;font-size:10px;">${det.label}</span>`).join("")}
+          </div>
+          <div style="margin-top:4px;font-size:10px;color:#94A3B8;">${d.detections.length} objects detected</div>
+        </div>`
+      );
+      marker.setPopup(popup);
+      marker.getElement().addEventListener("click", () => popup.addTo(map));
+      detectionMarkersRef.current[d.cameraId] = marker;
+    }
+
+    // Fly to newest detection
+    if (active.length > 0) {
+      const newest = active[active.length - 1];
+      map.flyTo({
+        center: [newest.lon, newest.lat],
+        zoom: 15.5,
+        pitch: 55,
+        bearing: -20,
+        duration: 1200,
+      });
+    }
+  }, [detectionFeed, loading]);
+
   // Agent-driven camera panning: when tactical panel changes, fly camera to relevant zone
   useEffect(() => {
     const map = mapRef.current;
@@ -652,15 +725,12 @@ export function MapPage() {
     }
   }, [activeKind, loading]);
 
-  // Start/stop heatflow particle animation when disruption/hazard panels are active
+  // Start/stop heatflow particle animation - always active for congestion visualization
   useEffect(() => {
     if (!flowLayerRef.current || loading) return;
-    if (activeKind === "disruption" || activeKind === "hazard") {
-      flowLayerRef.current.start();
-    } else {
-      flowLayerRef.current.stop();
-    }
-  }, [activeKind, loading]);
+    // Always show heatflows for congestion visualization
+    flowLayerRef.current.start();
+  }, [loading]);
 
   // Auto-run live feed when the live panel appears with no data
   useEffect(() => {
@@ -1167,80 +1237,261 @@ export function MapPage() {
   };
 
   return (
-    <div className="relative h-full w-full bg-[#0B0B0D] text-[#E8E8E8]">
-      {loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0B0B0D]/90 backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-[13px] text-white/50">
-            <div className="h-2 w-2 rounded-full bg-[#0EA5E9] animate-pulse" />
-            Loading map...
-          </div>
-        </div>
-      )}
-
-      {/* Computing overlay — appears while the agent calculates a visualization */}
-      <AnimatePresence>
-        {computingKind && (
-          <motion.div
-            key="computing-pill"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-20 glass-panel px-4 py-2 flex items-center gap-2.5"
-          >
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-[#0EA5E9] opacity-60 animate-ping" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-[#0EA5E9]" />
-            </span>
-            <span className="text-[12px] text-white/70">
-              Computing {COMPUTE_LABELS[computingKind] ?? "data"}…
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Debug: visible MapLibre errors */}
-      {mapErrors.length > 0 && (
-        <div className="absolute bottom-16 left-4 z-30 max-w-sm">
-          {mapErrors.map((err, i) => (
-            <div
-              key={i}
-              className="mb-1 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 px-3 py-1.5 text-[10px] text-[#EF4444] font-mono"
-            >
-              {err}
+    <div className="flex h-screen w-full bg-[#0B0B0D] text-[#E8E8E8]">
+      {/* Left: Map + all overlays */}
+      <div className="relative flex-1 h-full overflow-hidden">
+        {/* Map canvas — fills the left panel */}
+        <div ref={mapContainer} className="absolute inset-0" />
+        {loading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0B0B0D]/90 backdrop-blur-sm">
+            <div className="flex items-center gap-2 text-[13px] text-white/50">
+              <div className="h-2 w-2 rounded-full bg-[#0EA5E9] animate-pulse" />
+              Loading map...
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* Computing overlay */}
+        <AnimatePresence>
+          {computingKind && (
+            <motion.div
+              key="computing-pill"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 glass-panel px-4 py-2 flex items-center gap-2.5"
+            >
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[#0EA5E9] opacity-60 animate-ping" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-[#0EA5E9]" />
+              </span>
+              <span className="text-[12px] text-white/70">
+                Computing {COMPUTE_LABELS[computingKind] ?? "data"}…
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Debug: MapLibre errors */}
+        {mapErrors.length > 0 && (
+          <div className="absolute bottom-16 left-4 z-30 max-w-sm">
+            {mapErrors.map((err, i) => (
+              <div
+                key={i}
+                className="mb-1 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 px-3 py-1.5 text-[10px] text-[#EF4444] font-mono"
+              >
+                {err}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom-left status */}
+        <div className="absolute bottom-6 left-4 z-10 flex items-center gap-3 glass-panel px-3 py-1.5">
+          <span className="flex items-center gap-1.5 text-[11px] text-white/50">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {hazardCount} hazards
+          </span>
         </div>
-      )}
 
-      {/* Bottom-left status */}
-      <div className="absolute bottom-6 left-4 z-10 flex items-center gap-3 glass-panel px-3 py-1.5">
-        <span className="flex items-center gap-1.5 text-[11px] text-white/50">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          {hazardCount} hazards
-        </span>
-      </div>
-
-      {/* Top Right - View toggle */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        {isRoutingActive && (
+        {/* Top Left - View toggle (away from sidebar edge) */}
+        <div className="absolute top-4 left-4 z-10 flex gap-2">
+          {isRoutingActive && (
+            <button
+              onClick={resetAllLayers}
+              className="glass-panel px-2.5 py-1.5 text-[11px] font-medium text-white/70 hover:text-white transition-all duration-200"
+            >
+              Clear route
+            </button>
+          )}
           <button
-            onClick={resetAllLayers}
+            onClick={() => setViewMode(viewMode === "3d" ? "flat" : "3d")}
             className="glass-panel px-2.5 py-1.5 text-[11px] font-medium text-white/70 hover:text-white transition-all duration-200"
           >
-            Clear route
+            {viewMode === "3d" ? "2D" : "3D"}
           </button>
-        )}
-        <button
-          onClick={() => setViewMode(viewMode === "3d" ? "flat" : "3d")}
-          className="glass-panel px-2.5 py-1.5 text-[11px] font-medium text-white/70 hover:text-white transition-all duration-200"
-        >
-          {viewMode === "3d" ? "2D" : "3D"}
-        </button>
+        </div>
+
+        {/* Chat Assistant — bottom-left, always visible */}
+        <div className="fixed bottom-6 left-6 z-50">
+          <AnimatePresence>
+            {!isAssistantExpanded ? (
+              <motion.button
+                key="collapsed-bubble"
+                layoutId="assistant-container"
+                onClick={() => setIsAssistantExpanded(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={busy ? { scale: [1, 1.05, 1] } : {}}
+                transition={busy ? { duration: 1.5, repeat: Infinity } : {}}
+                className="flex items-center gap-2 bg-[#121214]/90 hover:bg-[#1a1a1c] border border-white/10 text-white/70 px-4 py-2.5 rounded-full text-[12px] font-medium transition-all cursor-pointer"
+              >
+                {busy ? (
+                  <motion.span
+                    className="flex gap-0.5"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
+                  </motion.span>
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
+                )}
+                {busy ? "Thinking..." : "Ask anything"}
+              </motion.button>
+          ) : (
+            <motion.div
+              key="expanded-assistant"
+              layoutId="assistant-container"
+              className="glass-panel w-[min(480px,calc(100vw-6rem))] max-h-[480px] flex flex-col p-4 overflow-hidden rounded-xl bg-[#121214]/80"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2.5">
+                <span className="text-[12px] font-medium text-white/70 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
+                  Assistant
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="light"
+                    isIconOnly
+                    className="text-white/40 hover:text-white/70 min-w-0 h-6 w-6"
+                    onPress={toggleTts}
+                  >
+                    {ttsEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                  </Button>
+                  <button
+                    onClick={() => setIsAssistantExpanded(false)}
+                    className="text-white/30 hover:text-white/60 text-[11px] transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {/* Visualizer */}
+              <div className="py-1 border-b border-white/5 overflow-hidden">
+                <GeminiVisualizer state={visualizerState} />
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 min-h-0 overflow-y-auto my-3 pr-1 space-y-3 max-h-[150px]">
+                {lines.length === 0 ? (
+                  <p className="text-[11px] text-white/30 text-center py-8">
+                    Ask about routes, stations, or disruptions
+                  </p>
+                ) : (
+                  lines.map((line) => (
+                    <div
+                      key={line.id}
+                      className={`flex ${line.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-normal ${
+                          line.role === "user"
+                            ? "bg-[#0EA5E9]/10 text-white/80"
+                            : "bg-white/[0.04] text-white/70"
+                        }`}
+                      >
+                        {line.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {busy && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/[0.04] rounded-xl px-3 py-2 text-[12px] text-white/50 flex items-center gap-1.5">
+                      <motion.span
+                        className="flex gap-0.5"
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      >
+                        <span className="h-1 w-1 rounded-full bg-[#0EA5E9]" />
+                        <span className="h-1 w-1 rounded-full bg-[#0EA5E9]" />
+                        <span className="h-1 w-1 rounded-full bg-[#0EA5E9]" />
+                      </motion.span>
+                      <span>Thinking...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="flex items-center gap-2 shrink-0 pt-3 border-t border-white/5">
+                <VoiceControls
+                  supported={voice.supported}
+                  listening={voice.listening || voice.transcribing}
+                  disabled={busy}
+                  onToggleMic={onToggleMic}
+                />
+                <TextInputBar disabled={busy || voice.listening || voice.transcribing} onSend={send} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Agent-driven Tactical Cards */}
-      <div className="absolute top-4 right-4 bottom-24 z-10 flex flex-col gap-3 w-[320px] overflow-y-auto pointer-events-none">
+      {/* TfL Camera Popup */}
+      {cameraPopup && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          className="absolute bottom-20 left-4 z-20 glass-panel p-3 w-[320px] rounded-xl"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[12px] font-medium text-white/80">{cameraPopup.camera_name}</span>
+            <button onClick={() => setCameraPopup(null)} className="text-white/30 hover:text-white/60 text-[11px]">Close</button>
+          </div>
+          {cameraPopup.image_url ? (
+            <div className="relative rounded-lg overflow-hidden bg-black/40">
+              <img
+                src={cameraPopup.image_url + "?t=" + Date.now()}
+                alt="TfL Camera"
+                className="w-full h-auto max-h-[200px] object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                  const fallback = document.createElement("div");
+                  fallback.className = "h-[160px] flex items-center justify-center text-[11px] text-white/30";
+                  fallback.textContent = "Camera feed unavailable";
+                  e.currentTarget.parentElement?.appendChild(fallback);
+                }}
+              />
+              <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[8px] text-white/70 uppercase tracking-wider">Live</span>
+              </div>
+            </div>
+          ) : cameraPopup.video_url ? (
+            <video
+              src={cameraPopup.video_url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full rounded-lg max-h-[200px] bg-black/40"
+            />
+          ) : (
+            <div className="bg-black/40 rounded-lg h-[160px] flex items-center justify-center">
+              <span className="text-[11px] text-white/30">Fetching camera feed…</span>
+            </div>
+          )}
+          <div className="mt-2 flex gap-2 text-[10px] text-white/40">
+            <span>Lat: {cameraPopup.lat.toFixed(4)}</span>
+            <span>Lon: {cameraPopup.lon.toFixed(4)}</span>
+          </div>
+        </motion.div>
+      )}
+
+      </div>
+
+      {/* Right: Tactical sidebar — responsive, hide on small screens */}
+      <div className="hidden lg:flex w-[320px] xl:w-[340px] shrink-0 flex-col gap-3 p-3 overflow-y-auto border-l border-white/5">
         <AnimatePresence>
           {activePanels.map((panel) => {
             const kind = panel.kind as TacticalPanelKind;
@@ -1365,159 +1616,33 @@ export function MapPage() {
                       )}
                     </div>
                   )}
+                  {kind === "detection" && (
+                    <div className="space-y-2">
+                      {detectionFeed.length > 0 ? (
+                        detectionFeed.slice(-1).map((d) => (
+                          <div key={d.cameraId} className="space-y-2">
+                            <DetectionOverlay
+                              imageUrl={d.imageUrl}
+                              detections={d.detections.map((det: any) => ({
+                                label: det.label,
+                                bbox: det.bbox,
+                                confidence: det.confidence,
+                              }))}
+                            />
+                            <div className="text-[10px] text-white/40">{d.detections.length} objects detected</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[12px] text-white/40">No detections</div>
+                      )}
+                    </div>
+                  )}
                 </TacticalCard>
               </div>
             );
           })}
         </AnimatePresence>
       </div>
-
-      {/* Chat Assistant */}
-      <div className="absolute bottom-6 right-6 z-30 flex flex-col items-end gap-3 max-w-sm w-full">
-        <AnimatePresence>
-          {!isAssistantExpanded ? (
-            <motion.button
-              key="collapsed-bubble"
-              layoutId="assistant-container"
-              onClick={() => setIsAssistantExpanded(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 bg-[#121214]/90 hover:bg-[#1a1a1c] border border-white/10 text-white/70 px-4 py-2.5 rounded-full text-[12px] font-medium transition-all cursor-pointer"
-            >
-              <span className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
-              Ask anything
-            </motion.button>
-          ) : (
-            <motion.div
-              key="expanded-assistant"
-              layoutId="assistant-container"
-              className="glass-panel w-[340px] max-h-[460px] flex flex-col p-4 overflow-hidden rounded-xl bg-[#121214]/80"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-2.5">
-                <span className="text-[12px] font-medium text-white/70 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
-                  Assistant
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="light"
-                    isIconOnly
-                    className="text-white/40 hover:text-white/70 min-w-0 h-6 w-6"
-                    onPress={toggleTts}
-                  >
-                    {ttsEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                  </Button>
-                  <button
-                    onClick={() => setIsAssistantExpanded(false)}
-                    className="text-white/30 hover:text-white/60 text-[11px] transition-all"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Visualizer */}
-              <div className="py-1 border-b border-white/5 overflow-hidden">
-                <GeminiVisualizer state={visualizerState} />
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 min-h-0 overflow-y-auto my-3 pr-1 space-y-3 max-h-[150px]">
-                {lines.length === 0 ? (
-                  <p className="text-[11px] text-white/30 text-center py-8">
-                    Ask about routes, stations, or disruptions
-                  </p>
-                ) : (
-                  lines.map((line) => (
-                    <div
-                      key={line.id}
-                      className={`flex ${line.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-normal ${
-                          line.role === "user"
-                            ? "bg-[#0EA5E9]/10 text-white/80"
-                            : "bg-white/[0.04] text-white/70"
-                        }`}
-                      >
-                        {line.text}
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Input */}
-              <div className="flex items-center gap-2 shrink-0 pt-3 border-t border-white/5">
-                <VoiceControls
-                  supported={voice.supported}
-                  listening={voice.listening || voice.transcribing}
-                  disabled={busy}
-                  onToggleMic={onToggleMic}
-                />
-                <TextInputBar disabled={busy || voice.listening || voice.transcribing} onSend={send} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* TfL Camera Popup */}
-      {cameraPopup && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute bottom-20 left-4 z-20 glass-panel p-3 w-[320px] rounded-xl"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-medium text-white/80">{cameraPopup.camera_name}</span>
-            <button onClick={() => setCameraPopup(null)} className="text-white/30 hover:text-white/60 text-[11px]">Close</button>
-          </div>
-          {cameraPopup.image_url ? (
-            <div className="relative rounded-lg overflow-hidden bg-black/40">
-              <img
-                src={cameraPopup.image_url + "?t=" + Date.now()}
-                alt="TfL Camera"
-                className="w-full h-auto max-h-[200px] object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  const fallback = document.createElement("div");
-                  fallback.className = "h-[160px] flex items-center justify-center text-[11px] text-white/30";
-                  fallback.textContent = "Camera feed unavailable";
-                  e.currentTarget.parentElement?.appendChild(fallback);
-                }}
-              />
-              <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[8px] text-white/70 uppercase tracking-wider">Live</span>
-              </div>
-            </div>
-          ) : cameraPopup.video_url ? (
-            <video
-              src={cameraPopup.video_url}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full rounded-lg max-h-[200px] bg-black/40"
-            />
-          ) : (
-            <div className="bg-black/40 rounded-lg h-[160px] flex items-center justify-center">
-              <span className="text-[11px] text-white/30">Fetching camera feed…</span>
-            </div>
-          )}
-          <div className="mt-2 flex gap-2 text-[10px] text-white/40">
-            <span>Lat: {cameraPopup.lat.toFixed(4)}</span>
-            <span>Lon: {cameraPopup.lon.toFixed(4)}</span>
-          </div>
-        </motion.div>
-      )}
-
-      <div ref={mapContainer} className="h-full w-full" />
     </div>
   );
 }

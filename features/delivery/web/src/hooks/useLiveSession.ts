@@ -8,6 +8,7 @@ import { useSummaries } from "@/providers/SummariesProvider";
 import { useMapState } from "@/providers/MapStateProvider";
 import { useTacticalPanels } from "@/providers/TacticalPanelProvider";
 import { useTtsPlayback } from "@/hooks/useTtsPlayback";
+import { subscribeAgentStream } from "@/api/agentEvents";
 import type { LiveSessionState } from "@/types/live";
 
 export type ChatLine = {
@@ -31,7 +32,7 @@ function toolStatusLabel(event: Extract<ChatStreamEvent, { type: "tool" }>): str
 export function useLiveSession() {
   const client = useApi();
   const navigate = useNavigate();
-  const { triggerMapIntent, setRouteCoordinates, setIsRoutingActive } = useMapState();
+  const { triggerMapIntent, setRouteCoordinates, setIsRoutingActive, pushDetection } = useMapState();
   const { saveForToday } = useSummaries();
   const { messages, setMessages, refreshMessages } = useSession();
   const tts = useTtsPlayback();
@@ -85,7 +86,26 @@ export function useLiveSession() {
       setRouteCoordinates(event.coordinates);
       setIsRoutingActive(true);
     }
-  }, [pushPanel, setRouteCoordinates, setIsRoutingActive]);
+    if (event.type === "detection") {
+      const ttlMs = typeof event.ttlMs === "number" ? event.ttlMs : 30000;
+      pushDetection({
+        cameraId: event.camera_id,
+        cameraName: event.camera_name,
+        lat: event.lat,
+        lon: event.lon,
+        imageUrl: event.image_url,
+        detections: event.detections,
+      }, ttlMs);
+      // Also push a tactical panel for the detection
+      pushPanel("detection", `${event.camera_name} — ${event.detections.length} objects`, ttlMs);
+    }
+  }, [pushPanel, setRouteCoordinates, setIsRoutingActive, pushDetection]);
+
+  // Subscribe to proactive autonomous events (watcher loop, alerts, etc.)
+  useEffect(() => {
+    const unsub = subscribeAgentStream(handleStreamEvent);
+    return unsub;
+  }, [handleStreamEvent]);
 
   const send = useCallback(
     async (text: string, image?: File) => {

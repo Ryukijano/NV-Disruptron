@@ -3,12 +3,25 @@ import { useSummaries } from "@/providers/SummariesProvider";
 import { useSubscriptions } from "@/providers/SubscriptionsProvider";
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${date}T12:00:00`));
+  try {
+    // Defensive: validate date string before creating Date object
+    if (!date || typeof date !== "string") {
+      return "Invalid date";
+    }
+    const dateObj = new Date(`${date}T12:00:00`);
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid date";
+    }
+    return new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(dateObj);
+  } catch (error) {
+    console.error("Invalid date format:", date, error);
+    return "Invalid date";
+  }
 }
 
 export function SummariesView() {

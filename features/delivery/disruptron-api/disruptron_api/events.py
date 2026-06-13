@@ -58,7 +58,14 @@ class EventBus:
         *,
         session_ids: list[str] | None = None,
     ) -> None:
-        message = event.to_sse()
+        await self.publish_raw(event.to_sse(), session_ids=session_ids)
+
+    async def publish_raw(
+        self,
+        message: str,
+        *,
+        session_ids: list[str] | None = None,
+    ) -> None:
         async with self._lock:
             targets = (
                 {sid: self._subscribers[sid] for sid in session_ids if sid in self._subscribers}
@@ -119,3 +126,48 @@ def chat_route_sse(
 ) -> str:
     """Emit a route coordinate payload so the frontend can draw the actual TfL journey on the map."""
     return f"data: {json.dumps({'type': 'route', 'kind': kind, 'title': title, 'coordinates': coordinates, 'ttlMs': ttl_ms})}\n\n"
+
+
+def chat_detection_sse(
+    camera_id: str,
+    camera_name: str,
+    lat: float,
+    lon: float,
+    image_url: str,
+    detections: list[dict],
+    ttl_ms: int = 30000,
+) -> str:
+    """Emit a camera detection payload — map popup + tactical card with bounding boxes."""
+    payload = {
+        "type": "detection",
+        "camera_id": camera_id,
+        "camera_name": camera_name,
+        "lat": lat,
+        "lon": lon,
+        "image_url": image_url,
+        "detections": detections,
+        "ttlMs": ttl_ms,
+    }
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+def detection_event_payload(
+    camera_id: str,
+    camera_name: str,
+    lat: float,
+    lon: float,
+    image_url: str,
+    detections: list[dict],
+    ttl_ms: int = 30000,
+) -> dict:
+    """Same payload as chat_detection_sse but as a dict, for EventBus broadcast."""
+    return {
+        "type": "detection",
+        "camera_id": camera_id,
+        "camera_name": camera_name,
+        "lat": lat,
+        "lon": lon,
+        "image_url": image_url,
+        "detections": detections,
+        "ttlMs": ttl_ms,
+    }

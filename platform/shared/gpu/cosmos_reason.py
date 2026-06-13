@@ -5,7 +5,7 @@ reasons over short video clips to produce causal explanations:
 "Why did the crowd form?", "Is the flooding getting worse?", etc.
 
 Usage:
-    from platform.shared.gpu.cosmos_reason import CosmosReasonClient
+    from shared.gpu.cosmos_reason import CosmosReasonClient
     client = CosmosReasonClient()
     analysis = client.analyze_clip(video_path="/tmp/cctv_clip.mp4", question="What is happening?")
 """

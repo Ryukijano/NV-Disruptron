@@ -6,6 +6,16 @@ import {
   type ReactNode,
 } from "react";
 
+export type DetectionFeedItem = {
+  cameraId: string;
+  cameraName: string;
+  lat: number;
+  lon: number;
+  imageUrl: string;
+  detections: { label: string; bbox: [number, number, number, number]; confidence: number }[];
+  expiresAt: number;
+};
+
 type MapStateContextValue = {
   isRoutingActive: boolean;
   setIsRoutingActive: (active: boolean) => void;
@@ -18,6 +28,9 @@ type MapStateContextValue = {
   routeCoordinates: [number, number][];
   setRouteCoordinates: (coords: [number, number][]) => void;
   triggerMapIntent: (query: string) => boolean;
+  detectionFeed: DetectionFeedItem[];
+  pushDetection: (item: Omit<DetectionFeedItem, "expiresAt">, ttlMs?: number) => void;
+  clearDetections: () => void;
 };
 
 const MapStateContext = createContext<MapStateContextValue | null>(null);
@@ -28,6 +41,13 @@ export function MapStateProvider({ children }: { children: ReactNode }) {
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [showDisruptionAlert, setShowDisruptionAlert] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [detectionFeed, setDetectionFeed] = useState<DetectionFeedItem[]>([]);
+
+  const pushDetection = (item: Omit<DetectionFeedItem, "expiresAt">, ttlMs = 30000) => {
+    const expiresAt = Date.now() + ttlMs;
+    setDetectionFeed((prev) => [...prev.filter((p) => p.cameraId !== item.cameraId), { ...item, expiresAt }]);
+  };
+  const clearDetections = () => setDetectionFeed([]);
 
   const triggerMapIntent = (query: string): boolean => {
     const q = query.toLowerCase();
@@ -84,8 +104,11 @@ export function MapStateProvider({ children }: { children: ReactNode }) {
       routeCoordinates,
       setRouteCoordinates,
       triggerMapIntent,
+      detectionFeed,
+      pushDetection,
+      clearDetections,
     }),
-    [isRoutingActive, searchQuery, selectedStation, showDisruptionAlert, routeCoordinates]
+    [isRoutingActive, searchQuery, selectedStation, showDisruptionAlert, routeCoordinates, detectionFeed]
   );
 
   return (

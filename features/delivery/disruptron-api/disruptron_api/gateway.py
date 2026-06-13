@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -176,7 +177,32 @@ def create_app(
             scheduler.start()
         if alert_monitor is not None:
             alert_monitor.start()
+        watcher_task: asyncio.Task | None = None
+        watcher_env = os.getenv("DISRUPTRON_WATCHER", "0")
+        logger.info("Watcher check: DISRUPTRON_WATCHER=%s, events=%s", watcher_env, events is not None)
+        if watcher_env == "1" and events is not None:
+            import json
+            from disruptron_api.backend.watcher import watcher_loop
+
+            async def _emit_to_bus(payload: dict) -> None:
+                await events.publish_raw(f"data: {json.dumps(payload)}\n\n")
+
+            logger.info("Starting autonomous watcher loop (interval=%s, cameras=%s)",
+                        os.getenv("WATCH_INTERVAL_S", "300"), os.getenv("WATCH_CAMERAS", "3"))
+            watcher_task = asyncio.create_task(
+                watcher_loop(
+                    emit=_emit_to_bus,
+                    interval_s=float(os.getenv("WATCH_INTERVAL_S", "300")),
+                    max_cameras_per_cycle=int(os.getenv("WATCH_CAMERAS", "3")),
+                )
+            )
         yield
+        if watcher_task is not None:
+            watcher_task.cancel()
+            try:
+                await watcher_task
+            except asyncio.CancelledError:
+                pass
         if alert_monitor is not None:
             await alert_monitor.stop()
         if scheduler is not None:
@@ -1291,12 +1317,104 @@ def create_app(
                         "lat": d.get("lat"),
                         "lon": d.get("lon"),
                     })
-                    if len(disruptions) >= limit:
-                        break
-                return {"disruptions": disruptions, "count": len(disruptions), "source": "tfl_api"}
+                return {"disruptions": disruptions[:limit], "total": len(disruptions)}
         except Exception as exc:
-            logger.warning("tfl road disruptions failed: %s", exc)
-            return {"disruptions": [], "count": 0, "source": "tfl_api", "error": str(exc)}
+            logger.warning("tfl_road_disruptions failed: %s", exc)
+            return {"disruptions": [], "error": str(exc)}
+
+    # --- Real TfL road congestion for heatflows ---
+    @app.get("/v1/geo/road-congestion")
+    async def get_road_congestion() -> dict:
+        """Fetch live road congestion data from TfL for real-time heatflow visualization."""
+        import httpx
+        import os
+        import re
+
+        try:
+            base = "https://api.tfl.gov.uk"
+            key = os.getenv("TFL_APP_KEY", "").strip()
+            url = f"{base}/Road/all/Status"
+            params: dict[str, str] = {}
+            if key:
+                params["app_key"] = key
+
+            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+                resp = await client.get(url, params=params)
+                resp.raise_for_status()
+                road_status = resp.json()
+
+            # Convert to GeoJSON FeatureCollection for map rendering
+            features = []
+            for corridor in road_status:
+                # Parse bounds/envelope to create a simple line representation
+                bounds_str = corridor.get("bounds", "")
+                envelope_str = corridor.get("envelope", "")
+                
+                # Parse bounding box coordinates [min_lon, min_lat, max_lon, max_lat]
+                coords = []
+                if bounds_str:
+                    try:
+                        # Parse bounds format: "[[min_lon,min_lat],[max_lon,max_lat]]"
+                        bounds_match = re.search(r'\[\[([-0-9.]+),([-0-9.]+)\],\[([-0-9.]+),([-0-9.]+)\]\]', bounds_str)
+                        if bounds_match:
+                            min_lon, min_lat, max_lon, max_lat = map(float, bounds_match.groups())
+                            # Create a simple line through the bounding box
+                            coords = [
+                                [min_lon, min_lat],
+                                [max_lon, max_lat]
+                            ]
+                    except (ValueError, AttributeError):
+                        pass
+
+                if not coords and envelope_str:
+                    try:
+                        # Parse envelope format (polygon): "[[lon1,lat1],[lon2,lat2],...]"
+                        envelope_coords = re.findall(r'\[([-0-9.]+),([-0-9.]+)\]', envelope_str)
+                        if envelope_coords:
+                            coords = [[float(lon), float(lat)] for lon, lat in envelope_coords]
+                    except (ValueError, AttributeError):
+                        pass
+
+                if not coords:
+                    continue
+
+                # Map TfL severity to our blue-purple-red scale
+                severity = corridor.get("statusSeverity", "").lower()
+                severity_desc = corridor.get("statusSeverityDescription", "").lower()
+                
+                if "serious" in severity or "severe" in severity or "severe" in severity_desc:
+                    congestion_level = "high"  # red
+                elif "moderate" in severity or "heavy" in severity or "heavy" in severity_desc:
+                    congestion_level = "medium"  # purple
+                else:
+                    congestion_level = "low"  # blue
+
+                features.append({
+                    "type": "Feature",
+                    "properties": {
+                        "id": corridor.get("id"),
+                        "name": corridor.get("displayName"),
+                        "severity": corridor.get("statusSeverity"),
+                        "severity_description": corridor.get("statusSeverityDescription"),
+                        "congestion_level": congestion_level,
+                    },
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": coords,  # [lon, lat] pairs
+                    },
+                })
+
+            return {
+                "type": "FeatureCollection",
+                "features": features,
+                "meta": {
+                    "total_corridors": len(road_status),
+                    "source": "TfL Unified API",
+                },
+            }
+        except Exception as exc:
+            logger.warning("Failed to fetch road congestion: %s", exc)
+            return {"type": "FeatureCollection", "features": [], "error": str(exc)}
 
     # --- NVIDIA cuOpt VRP for hazard-response crew routing ---
     @app.post("/v1/routing/hazard-response")
@@ -1311,7 +1429,7 @@ def create_app(
         and returns ordered waypoints per vehicle. Falls back to greedy nearest-
         neighbour if cuOpt is unavailable.
         """
-        from platform.shared.gpu.cuopt_routing import plan_hazard_response_routes
+        from shared.gpu.cuopt_routing import plan_hazard_response_routes
 
         ids = None
         if hazard_ids:
@@ -1330,7 +1448,7 @@ def create_app(
     @app.get("/v1/routing/depots")
     def list_response_depots() -> list[dict]:
         """Return known London response depot locations for VRP routing."""
-        from platform.shared.gpu.cuopt_routing import _load_depots
+        from shared.gpu.cuopt_routing import _load_depots
         depots = _load_depots()
         return depots
 
@@ -1345,7 +1463,7 @@ def create_app(
         Uses GPU-accelerated vector search (cuVS) when available,
         falling back to FAISS-CPU or brute-force.
         """
-        from platform.shared.gpu.rag_engine import get_rag_engine
+        from shared.gpu.rag_engine import get_rag_engine
 
         engine = get_rag_engine()
         engine.top_k = top_k
@@ -1357,7 +1475,7 @@ def create_app(
 
         Body: list of {"text": "...", "source": "...", "metadata": {}} objects.
         """
-        from platform.shared.gpu.rag_engine import get_rag_engine
+        from shared.gpu.rag_engine import get_rag_engine
 
         engine = get_rag_engine()
         engine.add_documents(body)
@@ -1367,7 +1485,7 @@ def create_app(
     def rag_stats() -> dict:
         """Return RAG index statistics."""
         import sqlite3
-        from platform.shared.gpu.rag_engine import RAG_DB, GPU_VS_AVAILABLE, FAISS_AVAILABLE
+        from shared.gpu.rag_engine import RAG_DB, GPU_VS_AVAILABLE, FAISS_AVAILABLE
 
         chunk_count = 0
         query_count = 0
@@ -1398,7 +1516,7 @@ def create_app(
         crowd formation, flooding progression, accident causation, etc.
         Falls back to Nemotron Omni on first frame if Cosmos unavailable.
         """
-        from platform.shared.gpu.cosmos_reason import get_cosmos_client
+        from shared.gpu.cosmos_reason import get_cosmos_client
         import tempfile
 
         suffix = Path(video.filename).suffix or ".mp4"
@@ -1418,7 +1536,7 @@ def create_app(
         sample_rate: int = Query(16000),
     ) -> dict:
         """ASR: Transcribe uploaded audio using Riva NIM (privacy-first, local)."""
-        from platform.shared.gpu.riva_voice import get_riva_client
+        from shared.gpu.riva_voice import get_riva_client
 
         client = get_riva_client()
         audio_bytes = await audio.read()
@@ -1435,7 +1553,7 @@ def create_app(
         PII is automatically stripped before synthesis.
         Severity controls voice persona (info/warning/critical).
         """
-        from platform.shared.gpu.riva_voice import get_riva_client
+        from shared.gpu.riva_voice import get_riva_client
 
         client = get_riva_client()
         if severity in ("warning", "critical"):
@@ -1445,7 +1563,7 @@ def create_app(
     @app.get("/v1/voice/status")
     def riva_status() -> dict:
         """Check Riva ASR + TTS NIM availability."""
-        from platform.shared.gpu.riva_voice import get_riva_client
+        from shared.gpu.riva_voice import get_riva_client
 
         client = get_riva_client()
         return {
@@ -1470,7 +1588,7 @@ def create_app(
         - accessibility_query: rag → voice response
         - live_monitor: detect + cosmos reason loop
         """
-        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+        from shared.gpu.nat_orchestrator import get_nat_orchestrator
 
         nat = get_nat_orchestrator()
         inputs = {
@@ -1489,7 +1607,7 @@ def create_app(
         limit: int = Query(100, ge=1, le=1000),
     ) -> list[dict]:
         """Return recent agent workflow traces with latency + GPU memory."""
-        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+        from shared.gpu.nat_orchestrator import get_nat_orchestrator
 
         nat = get_nat_orchestrator()
         return nat.get_traces(limit=limit)
@@ -1497,7 +1615,7 @@ def create_app(
     @app.get("/v1/agent/tools")
     def agent_list_tools() -> dict:
         """List registered NAT tools and fallback chains."""
-        from platform.shared.gpu.nat_orchestrator import get_nat_orchestrator
+        from shared.gpu.nat_orchestrator import get_nat_orchestrator
 
         nat = get_nat_orchestrator()
         return {

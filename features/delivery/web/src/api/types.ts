@@ -45,7 +45,23 @@ export type ChatStreamEvent =
       title: string;
       coordinates: [number, number][];
       ttlMs: number;
+    }
+  | {
+      type: "detection";
+      camera_id: string;
+      camera_name: string;
+      lat: number;
+      lon: number;
+      image_url: string;
+      detections: DetectionResult[];
+      ttlMs: number;
     };
+
+export type DetectionResult = {
+  label: string;
+  bbox: [number, number, number, number];
+  confidence: number;
+};
 
 export type UserPreferences = {
   session_id: string;

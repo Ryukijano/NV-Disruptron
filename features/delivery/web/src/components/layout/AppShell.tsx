@@ -79,7 +79,7 @@ export function AppShell() {
       </header>
 
       <main
-        className={`relative z-10 min-h-0 flex-1 overflow-hidden w-full ${
+        className={`relative z-10 h-full flex-1 flex overflow-hidden w-full ${
           isMapPage ? "" : "max-w-3xl mx-auto"
         }`}
       >

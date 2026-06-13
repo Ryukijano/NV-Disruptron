@@ -410,7 +410,8 @@ class AgentChatEngine:
         if any(k in user_lower for k in ("audio", "sound", "noise", "recording", "microphone", "acoustic", "listen")):
             tool_kinds.append("audio")
 
-        if shutil.which("openclaw"):
+        # Skip OpenClaw when in local mode - use Nemotron directly with tool context injection
+        if not self._local and shutil.which("openclaw"):
             store = get_context_store()
             session_id = store.openclaw_session_id_for(turn.channel, turn.chat_id)
             aid = agent_id or self._agent_id

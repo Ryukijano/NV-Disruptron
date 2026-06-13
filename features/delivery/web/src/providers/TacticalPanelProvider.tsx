@@ -16,7 +16,8 @@ export type TacticalPanelKind =
   | "hazard"
   | "station"
   | "route"
-  | "disruption";
+  | "disruption"
+  | "detection";
 
 export type ActivePanel = {
   kind: TacticalPanelKind;
@@ -64,13 +65,15 @@ export function TacticalPanelProvider({ children }: { children: ReactNode }) {
       }
       timers.current.delete(kind);
 
-      const expiresAt = Date.now() + ttlMs;
+      // Defensive: ensure ttlMs is a valid number
+      const validTtlMs = typeof ttlMs === "number" && !isNaN(ttlMs) && ttlMs > 0 ? ttlMs : 15000;
+      const expiresAt = Date.now() + validTtlMs;
       setActivePanels((prev) => {
         const rest = prev.filter((p) => p.kind !== kind);
         return [...rest, { kind, title, expiresAt }];
       });
 
-      const timer = window.setTimeout(() => dismissPanel(kind), ttlMs);
+      const timer = window.setTimeout(() => dismissPanel(kind), validTtlMs);
       timers.current.set(kind, timer);
     },
     [dismissPanel],

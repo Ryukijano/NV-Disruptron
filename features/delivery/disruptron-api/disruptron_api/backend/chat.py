@@ -124,6 +124,43 @@ class ChatProxy:
         if result is not None:
             await result
 
+    async def _maybe_emit_area_detections(
+        self,
+        user_text: str,
+        callback: StreamCallback | None,
+        max_cameras: int = 2,
+    ) -> None:
+        """If user mentions a London area/traffic/camera, analyze nearest JamCams and emit detection events."""
+        from disruptron_api.backend.camera_watch import _area_from_text, run_area_detection
+        from disruptron_api.events import chat_detection_sse, chat_panel_sse
+
+        area = _area_from_text(user_text)
+        if not area:
+            return
+        try:
+            results = await run_area_detection(area, max_cameras=max_cameras)
+            for r in results:
+                await self._emit(
+                    callback,
+                    chat_detection_sse(
+                        camera_id=r["camera_id"],
+                        camera_name=r["camera_name"],
+                        lat=r["lat"],
+                        lon=r["lon"],
+                        image_url=r["image_url"],
+                        detections=r["detections"],
+                        ttl_ms=30000,
+                    ),
+                )
+            if results:
+                count = sum(r["detection_count"] for r in results)
+                await self._emit(
+                    callback,
+                    chat_panel_sse("detection", f"{area} — {count} objects detected", ttl_ms=30000),
+                )
+        except Exception as exc:
+            logger.warning("Area detection emission failed: %s", exc)
+
     async def _prefetch_briefing(self, callback: StreamCallback | None) -> dict | None:
         from disruptron_api.events import chat_tool_sse, chat_ui_sse
 
@@ -198,6 +235,10 @@ class ChatProxy:
 
         if decision.prefetch_briefing:
             await self._prefetch_briefing(on_stream)
+
+        # ── Area-triggered camera detection popups ──
+        # Fire detections before the agent reply so UI pops up while model thinks
+        await self._maybe_emit_area_detections(turn.text, on_stream)
 
         reply: str | None = None
         tool_kinds: list[str] = []

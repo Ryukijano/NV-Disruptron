@@ -3,13 +3,14 @@ import type { TacticalPanelKind } from "@/providers/TacticalPanelProvider";
 
 // Softer, WCAG-friendly accent colors for dark mode — easy on the eyes
 const KIND_COLORS: Record<TacticalPanelKind, string> = {
-  video: "#818CF8",   // soft indigo
-  live: "#F59E0B",     // warm amber
-  audio: "#F472B6",    // soft rose
-  hazard: "#EF4444",   // standard red
-  station: "#06B6D4",  // teal
-  route: "#10B981",    // emerald
+  video: "#818CF8",    // soft indigo
+  live: "#F59E0B",      // warm amber
+  audio: "#F472B6",     // soft rose
+  hazard: "#EF4444",    // standard red
+  station: "#06B6D4",   // teal
+  route: "#10B981",     // emerald
   disruption: "#F97316", // warm orange
+  detection: "#22D3EE", // cyan — camera detection popup
 };
 
 const KIND_LABELS: Record<TacticalPanelKind, string> = {
@@ -20,6 +21,7 @@ const KIND_LABELS: Record<TacticalPanelKind, string> = {
   station: "Station Access",
   route: "Route Planning",
   disruption: "Live Disruptions",
+  detection: "Camera Detection",
 };
 
 export function TacticalCard({

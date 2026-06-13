@@ -1,8 +1,49 @@
 import type maplibregl from "maplibre-gl";
 
-// London congestion corridors with approximate polyline coordinates [lon, lat]
-// Ordered from start to end for directional flow
-export const FLOW_PATHS: Array<{
+// Real TfL road congestion data structure
+export type CongestionCorridor = {
+  id: string;
+  name: string;
+  severity: "serious" | "moderate" | "good";
+  coords: [number, number][];
+};
+
+// Fetch real TfL congestion data from backend
+export async function fetchRealCongestionData(): Promise<CongestionCorridor[]> {
+  try {
+    const response = await fetch("http://localhost:8010/v1/geo/road-congestion");
+    if (!response.ok) throw new Error("Failed to fetch congestion data");
+    const data = await response.json();
+    
+    // Convert GeoJSON FeatureCollection to our internal format
+    if (data.type === "FeatureCollection" && data.features) {
+      return data.features.map((feature: any) => {
+        const props = feature.properties;
+        const geometry = feature.geometry;
+        const coords = geometry?.coordinates || [];
+        
+        // Map congestion_level to severity
+        let severity: "serious" | "moderate" | "good" = "good";
+        if (props.congestion_level === "high") severity = "serious";
+        else if (props.congestion_level === "medium") severity = "moderate";
+        
+        return {
+          id: props.id || feature.properties?.id || "unknown",
+          name: props.name || feature.properties?.displayName || "Unknown",
+          severity,
+          coords: coords.map((c: [number, number]) => [c[0], c[1]]), // [lon, lat]
+        };
+      });
+    }
+    return [];
+  } catch (error) {
+    console.warn("Failed to fetch real congestion data, using fallback:", error);
+    return [];
+  }
+}
+
+// Fallback static data (used only if real data fetch fails)
+const FALLBACK_PATHS: Array<{
   id: string;
   name: string;
   severity: "serious" | "moderate" | "good";
@@ -90,6 +131,12 @@ export const FLOW_PATHS: Array<{
   },
 ];
 
+// Export the function to get flow paths (real data with fallback)
+export async function getFlowPaths(): Promise<CongestionCorridor[]> {
+  const realData = await fetchRealCongestionData();
+  return realData.length > 0 ? realData : FALLBACK_PATHS;
+}
+
 interface Particle {
   pathIndex: number;
   segIndex: number;
@@ -121,6 +168,7 @@ export class FlowParticleLayer {
   private rafId = 0;
   private map: maplibregl.Map;
   private active = false;
+  private flowPaths: CongestionCorridor[] = [];
 
   constructor(map: maplibregl.Map) {
     this.map = map;
@@ -140,6 +188,31 @@ export class FlowParticleLayer {
     map.on("resize", this.resize);
     map.on("move", this.resize);
     map.on("moveend", this.resize);
+
+    // Initialize with fallback data, then load real data asynchronously
+    this.flowPaths = FALLBACK_PATHS;
+    // Load real congestion data asynchronously (don't block constructor)
+    this.loadCongestionData().catch(() => {
+      // Fallback already set, just log
+      console.warn("[FlowParticleLayer] Using fallback congestion data");
+    });
+  }
+
+  private async loadCongestionData() {
+    try {
+      this.flowPaths = await getFlowPaths();
+      console.log(`[FlowParticleLayer] Loaded ${this.flowPaths.length} congestion corridors from TfL`);
+    } catch (error) {
+      console.error("[FlowParticleLayer] Failed to load congestion data:", error);
+      // Use fallback data on error
+      this.flowPaths = FALLBACK_PATHS;
+    }
+  }
+
+  // Allow manual refresh of congestion data
+  async refreshCongestionData() {
+    this.flowPaths = await getFlowPaths();
+    console.log(`[FlowParticleLayer] Refreshed ${this.flowPaths.length} congestion corridors`);
   }
 
   private resize = () => {
@@ -176,11 +249,15 @@ export class FlowParticleLayer {
 
   private spawnParticles() {
     if (!this.active) return;
+    // Use real congestion data if available, otherwise fallback
+    const paths = this.flowPaths.length > 0 ? this.flowPaths : FALLBACK_PATHS;
+    if (paths.length === 0) return;
+
     // Maintain ~150 particles total
     const target = 150;
     while (this.particles.length < target) {
-      const pathIdx = Math.floor(Math.random() * FLOW_PATHS.length);
-      const path = FLOW_PATHS[pathIdx];
+      const pathIdx = Math.floor(Math.random() * paths.length);
+      const path = paths[pathIdx];
       const segIdx = Math.floor(Math.random() * Math.max(1, path.coords.length - 1));
       const severitySpeed = path.severity === "serious" ? 0.3 : path.severity === "moderate" ? 0.6 : 1.0;
       this.particles.push({
@@ -201,10 +278,18 @@ export class FlowParticleLayer {
     const rect = this.map.getContainer().getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
 
+    // Use real congestion data if available, otherwise fallback
+    const paths = this.flowPaths.length > 0 ? this.flowPaths : FALLBACK_PATHS;
+    if (paths.length === 0) {
+      this.spawnParticles();
+      this.rafId = requestAnimationFrame(this.animate);
+      return;
+    }
+
     // Update and draw particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
-      const path = FLOW_PATHS[p.pathIndex];
+      const path = paths[p.pathIndex];
       const segments = projectPath(this.map, path.coords);
       if (segments.length < 2) continue;
 
@@ -234,12 +319,13 @@ export class FlowParticleLayer {
       const tx = x - (dx / len) * tailLen;
       const ty = y - (dy / len) * tailLen;
 
+      // Blue-red gradient: blue (low congestion) → purple (moderate) → red (high congestion)
       const color =
         path.severity === "serious"
-          ? `rgba(239,68,68,${p.alpha})` // red
+          ? `rgba(239,68,68,${p.alpha})` // red (high congestion)
           : path.severity === "moderate"
-          ? `rgba(245,158,11,${p.alpha})` // amber
-          : `rgba(16,185,129,${p.alpha})`; // green
+          ? `rgba(147,51,234,${p.alpha})` // purple (moderate congestion)
+          : `rgba(59,130,246,${p.alpha})`; // blue (low congestion)
 
       ctx.beginPath();
       ctx.moveTo(tx, ty);

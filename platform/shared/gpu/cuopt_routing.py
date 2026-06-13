@@ -5,7 +5,7 @@ Different from NeMo-Ray's set-cover mast placement: our cuOpt use = vehicle rout
 from live CCTV-detected hazards to nearest response depots.
 
 Usage:
-    from platform.shared.gpu.cuopt_routing import plan_hazard_response_routes
+    from shared.gpu.cuopt_routing import plan_hazard_response_routes
     routes = plan_hazard_response_routes(hazard_ids=[1, 2, 3], depot_csv="depots.csv")
 """
 

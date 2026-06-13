@@ -4,13 +4,26 @@ import { useNotifications } from "@/providers/NotificationsProvider";
 import { useSubscriptions } from "@/providers/SubscriptionsProvider";
 
 function formatWhen(ts: number) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(ts));
+  try {
+    // Defensive: validate timestamp before creating Date object
+    if (typeof ts !== "number" || isNaN(ts) || ts <= 0) {
+      return "Invalid time";
+    }
+    const dateObj = new Date(ts);
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid time";
+    }
+    return new Intl.DateTimeFormat("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(dateObj);
+  } catch (error) {
+    console.error("Invalid timestamp:", ts, error);
+    return "Invalid time";
+  }
 }
 
 export function NotificationsView() {
