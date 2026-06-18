@@ -1,5 +1,5 @@
 import { NextUIProvider } from "@nextui-org/react";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import { AgentUiProvider } from "@/providers/AgentUiProvider";
 import { ApiProvider } from "@/providers/ApiProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
@@ -22,11 +22,11 @@ export default function App() {
                 <AgentUiProvider>
                   <MapStateProvider>
                     <TacticalPanelProvider>
-                      <BrowserRouter>
+                      <HashRouter>
                         <ErrorBoundary>
                           <AppRoutes />
                         </ErrorBoundary>
-                      </BrowserRouter>
+                      </HashRouter>
                     </TacticalPanelProvider>
                   </MapStateProvider>
                 </AgentUiProvider>

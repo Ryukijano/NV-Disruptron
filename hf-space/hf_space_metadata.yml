@@ -1,0 +1,10 @@
+title: "Ryukijano's AI Portfolio + NV-Disruptron"
+emoji: "🚀"
+colorFrom: "green"
+colorTo: "blue"
+sdk: "docker"
+python_version: "3.11"
+app_file: "start_space.py"
+pinned: false
+license: "mit"
+short_description: "Portfolio + NV-Disruptron London mobility AI demo"

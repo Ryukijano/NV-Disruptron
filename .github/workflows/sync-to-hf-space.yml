@@ -1,0 +1,36 @@
+name: Sync Backend to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hf-space/**'
+      - '.github/workflows/sync-to-hf-space.yml'
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Hugging Face CLI
+        run: pip install huggingface_hub
+
+      - name: Sync hf-space/ to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          huggingface-cli upload --repo-type space \
+            Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2 \
+            hf-space/ \
+            --commit-message "Sync from GitHub: ${GITHUB_SHA::7}"

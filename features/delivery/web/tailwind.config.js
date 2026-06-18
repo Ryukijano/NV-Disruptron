@@ -15,6 +15,15 @@ export default {
         mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
+        canvas: "#0a0e1a",
+        surface: "#0f1525",
+        nvidia: "#76b900",
+        "electric-cyan": "#00d4ff",
+        "neon-green": "#00ff88",
+        "warm-amber": "#f97316",
+        "soft-purple": "#a855f7",
+        "text-primary": "#e8edf5",
+        "text-secondary": "#8b95a8",
         cyan: {
           neon: "#66FCF1",
         },
@@ -33,6 +42,18 @@ export default {
         emerald: {
           DEFAULT: "#00FA9A",
         },
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+      },
+      keyframes: {
+        "gradient-drift": {
+          "0%, 100%": { transform: "translate(0%, 0%)" },
+          "50%": { transform: "translate(3%, -3%)" },
+        },
+      },
+      animation: {
+        "gradient-drift": "gradient-drift 20s ease-in-out infinite",
       },
     },
   },

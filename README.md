@@ -194,7 +194,26 @@ Edit `features/agent/workspace/USER.md` with your EV/commute areas (kept private
 
 ## Community & Cloud Deployment
 
-**Hugging Face Space** — A community cloud deployment is in progress so anyone can run NV-Disruptron without a DGX Spark.
+**GitHub Pages Frontend** — The optimistic-cyberpunk landing page + interactive map app is deployed at:
+
+- https://ryukijano.github.io/NV-Disruptron/
+
+**Hugging Face Space Backend** — A lightweight demo backend runs on the existing A10G Space using NVIDIA Nemotron-3-Nano-4B, fully local inference:
+
+- https://huggingface.co/spaces/Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2
+- API endpoint: `/api/*`
+
+The HF Space backend is a smaller community demo; the full DGX Spark stack (LocateAnything-3B, RAPIDS, cuOpt, Riva, Cosmos Reason 2) remains on the local DGX Spark.
+
+### How deployment works
+
+1. Fork `Smegalex/NV-Disruptron` to `Ryukijano/NV-Disruptron`
+2. Push to `main` triggers two GitHub Actions workflows:
+   - `.github/workflows/deploy-gh-pages.yml` — builds the Vite frontend and deploys to GitHub Pages
+   - `.github/workflows/sync-to-hf-space.yml` — syncs the `hf-space/` backend to the Hugging Face Space
+3. Set GitHub repo secrets:
+   - `HF_TOKEN` — Hugging Face write token
+4. Enable GitHub Pages source: Settings → Pages → GitHub Actions
 
 **Model Templates** — The repo includes swap-in templates for other small NVIDIA Nemotron models:
 - `Nemotron-3-Nano-3B` — lightweight, faster inference

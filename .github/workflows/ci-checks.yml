@@ -1,0 +1,57 @@
+name: CI Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: features/delivery/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: features/delivery/web
+        run: npm ci
+
+      - name: Type-check
+        working-directory: features/delivery/web
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: features/delivery/web
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://ryukijano-catcon-one-shot-controlnet-sd-1-5-b2.hf.space/api
+          CI: false
+
+  backend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        working-directory: features/delivery/disruptron-api
+        run: |
+          pip install -r requirements.txt
+
+      - name: Verify backend imports
+        working-directory: features/delivery/disruptron-api
+        run: |
+          python -c "import disruptron_api; print('disruptron_api import OK')"
