@@ -24,13 +24,15 @@ jobs:
           python-version: '3.11'
 
       - name: Install Hugging Face CLI
-        run: pip install huggingface_hub
+        run: pip install -U huggingface-hub
 
       - name: Sync hf-space/ to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          huggingface-cli upload --repo-type space \
-            Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2 \
-            hf-space/ \
-            --commit-message "Sync from GitHub: ${GITHUB_SHA::7}"
+          hf repo create Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2 --type space --yes || true
+          hf upload --repo-type space \
+            --local-path hf-space/ \
+            --remote-path / \
+            --commit-message "Sync from GitHub: ${GITHUB_SHA::7}" \
+            Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2
