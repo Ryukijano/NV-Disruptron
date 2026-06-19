@@ -451,9 +451,9 @@ def _inject_app_styles() -> None:
         /* Dark minimal fonts */
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap');
 
-        /* Base Streamlit overrides — pure dark */
+        /* Base Streamlit overrides — dark blue-black */
         .stApp, .main, .block-container {
-            background-color: #050505 !important;
+            background-color: #06080a !important;
             background-image: none !important;
             color: #e8e6e3 !important;
         }
@@ -463,12 +463,43 @@ def _inject_app_styles() -> None:
             padding-bottom: 3rem;
             max-width: 1400px;
             font-family: 'Inter', sans-serif;
+            position: relative;
+            z-index: 1;
         }
 
         /* Hide Streamlit branding */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
+
+        /* Particle constellation canvas */
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Gradient atmosphere blobs */
+        .stApp::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 25%, rgba(14, 165, 233, 0.06), transparent 70%),
+                radial-gradient(ellipse 500px 600px at 85% 55%, rgba(16, 185, 129, 0.05), transparent 70%),
+                radial-gradient(ellipse 450px 350px at 50% 85%, rgba(139, 92, 246, 0.04), transparent 70%);
+            animation: blob-drift 30s ease-in-out infinite alternate;
+        }
+        @keyframes blob-drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            33%  { transform: translate(30px, -20px) scale(1.05); }
+            66%  { transform: translate(-25px, 25px) scale(0.98); }
+            100% { transform: translate(15px, 10px) scale(1.02); }
+        }
 
         /* Subtle grain overlay for texture */
         .stApp::before {
@@ -477,11 +508,54 @@ def _inject_app_styles() -> None:
             top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 9999;
-            opacity: 0.025;
+            opacity: 0.015;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
-        /* Minimal button styling */
+        /* Custom scrollbar — gradient thumb */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #0ea5e9, #10b981, #8b5cf6);
+            border-radius: 0;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #0ea5e9, #10b981, #8b5cf6);
+            opacity: 0.8;
+        }
+
+        /* Text selection — green tint */
+        ::selection { background: rgba(16, 185, 129, 0.3); color: #f5f3ef; }
+        ::-moz-selection { background: rgba(16, 185, 129, 0.3); color: #f5f3ef; }
+
+        /* Keyframes */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes gradient-shift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.005); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.3; }
+            50%      { opacity: 0.6; }
+        }
+
+        /* Minimal button styling — gradient border on hover */
         .stButton > button {
             border-radius: 0 !important;
             font-weight: 500 !important;
@@ -494,12 +568,22 @@ def _inject_app_styles() -> None:
             background: transparent !important;
             border: 1px solid rgba(255,255,255,0.12) !important;
             color: #d0cdc8 !important;
+            position: relative;
         }
 
         .stButton > button:hover {
-            border-color: rgba(255,255,255,0.35) !important;
+            border-color: transparent !important;
+            background-clip: padding-box !important;
             background: rgba(255,255,255,0.04) !important;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow:
+                0 0 20px rgba(14, 165, 233, 0.12),
+                0 0 40px rgba(139, 92, 246, 0.06),
+                inset 0 0 0 1px rgba(16, 185, 129, 0.3);
+        }
+
+        .stButton > button:active {
+            transform: scale(0.98) translateY(0);
         }
 
         .stButton > button[kind="primary"] {
@@ -513,7 +597,7 @@ def _inject_app_styles() -> None:
             color: #888 !important;
         }
 
-        /* Cards — no glassmorphism, just subtle borders */
+        /* Cards — subtle borders with breathing + category glow */
         .hub-hero,
         .hub-card,
         .workspace-card,
@@ -526,11 +610,14 @@ def _inject_app_styles() -> None:
             display: flex;
             flex-direction: column;
             transition: all 0.4s ease;
+            animation: fadeInUp 0.8s ease both, breathe 6s ease-in-out infinite;
         }
 
         .hub-card:hover, .workspace-card:hover, .project-card:hover {
             border-color: rgba(255, 255, 255, 0.12);
             background: rgba(255, 255, 255, 0.03);
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(14, 165, 233, 0.06), 0 0 60px rgba(139, 92, 246, 0.04);
         }
 
         /* Hero Section — minimal, no gradients */
@@ -673,15 +760,15 @@ def _inject_app_styles() -> None:
             top: 0;
             left: 0;
             right: 0;
-            height: 1px;
-            background: rgba(255,255,255,0.08);
+            height: 2px;
+            background: linear-gradient(90deg, #0ea5e9, #10b981, #8b5cf6);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
 
         .hub-card:hover::before,
         .project-card:hover::before {
-            opacity: 1;
+            opacity: 0.6;
         }
 
         /* Featured project ribbon — minimal */
@@ -700,18 +787,48 @@ def _inject_app_styles() -> None:
             font-family: 'IBM Plex Mono', monospace;
         }
 
-        /* Category accent — thin line, no color chaos */
-        .project-card[data-category="Medical AI"] {
-            border-left: 2px solid rgba(255, 255, 255, 0.1);
+        /* Category accent — colored left border with pulse glow */
+        .project-card[data-category="Medical AI"], .mb-card[data-category="Medical AI"] {
+            border-left: 2px solid rgba(14, 165, 233, 0.4);
         }
-        .project-card[data-category="Quantum"] {
-            border-left: 2px solid rgba(255, 255, 255, 0.08);
+        .project-card[data-category="Medical AI"]:hover, .mb-card[data-category="Medical AI"]:hover {
+            box-shadow: 0 0 25px rgba(14, 165, 233, 0.12), 0 0 50px rgba(14, 165, 233, 0.06);
+            border-left-color: rgba(14, 165, 233, 0.8);
         }
-        .project-card[data-category="Robotics"] {
-            border-left: 2px solid rgba(255, 255, 255, 0.08);
+        .project-card[data-category="Traffic Safety"], .mb-card[data-category="Traffic Safety"] {
+            border-left: 2px solid rgba(245, 158, 11, 0.4);
         }
-        .project-card[data-category="Optimization"] {
-            border-left: 2px solid rgba(255, 255, 255, 0.06);
+        .project-card[data-category="Traffic Safety"]:hover, .mb-card[data-category="Traffic Safety"]:hover {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.12), 0 0 50px rgba(245, 158, 11, 0.06);
+            border-left-color: rgba(245, 158, 11, 0.8);
+        }
+        .project-card[data-category="Quantum Computing"], .mb-card[data-category="Quantum Computing"] {
+            border-left: 2px solid rgba(139, 92, 246, 0.4);
+        }
+        .project-card[data-category="Quantum Computing"]:hover, .mb-card[data-category="Quantum Computing"]:hover {
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.12), 0 0 50px rgba(139, 92, 246, 0.06);
+            border-left-color: rgba(139, 92, 246, 0.8);
+        }
+        .project-card[data-category="Interpretability"], .mb-card[data-category="Interpretability"] {
+            border-left: 2px solid rgba(236, 72, 153, 0.4);
+        }
+        .project-card[data-category="Interpretability"]:hover, .mb-card[data-category="Interpretability"]:hover {
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.12), 0 0 50px rgba(236, 72, 153, 0.06);
+            border-left-color: rgba(236, 72, 153, 0.8);
+        }
+        .project-card[data-category="Robotics"], .mb-card[data-category="Robotics"] {
+            border-left: 2px solid rgba(16, 185, 129, 0.4);
+        }
+        .project-card[data-category="Robotics"]:hover, .mb-card[data-category="Robotics"]:hover {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.12), 0 0 50px rgba(16, 185, 129, 0.06);
+            border-left-color: rgba(16, 185, 129, 0.8);
+        }
+        .project-card[data-category="Model Optimization"], .mb-card[data-category="Model Optimization"] {
+            border-left: 2px solid rgba(239, 68, 68, 0.4);
+        }
+        .project-card[data-category="Model Optimization"]:hover, .mb-card[data-category="Model Optimization"]:hover {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.12), 0 0 50px rgba(239, 68, 68, 0.06);
+            border-left-color: rgba(239, 68, 68, 0.8);
         }
 
         .hub-card ul,
@@ -896,6 +1013,106 @@ def _inject_app_styles() -> None:
             }
         }
         </style>
+        <canvas id="particle-canvas"></canvas>
+        <script>
+        (function() {{
+            const canvas = document.getElementById('particle-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let mouse = {{ x: -1000, y: -1000 }};
+            const colors = ['rgba(14,165,233,', 'rgba(16,185,129,', 'rgba(139,92,246,'];
+            const PARTICLE_COUNT = 50;
+            const MAX_DIST = 130;
+            const MOUSE_DIST = 150;
+
+            function resize() {{
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }}
+
+            function initParticles() {{
+                particles = [];
+                for (let i = 0; i < PARTICLE_COUNT; i++) {{
+                    particles.push({{
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        vy: (Math.random() - 0.5) * 0.3,
+                        r: Math.random() * 1.5 + 0.5,
+                        ci: Math.floor(Math.random() * colors.length),
+                        opacity: Math.random() * 0.15 + 0.08
+                    }});
+                }}
+            }}
+
+            function animate() {{
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < particles.length; i++) {{
+                    const p = particles[i];
+                    // Mouse attraction
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const md = Math.sqrt(dx * dx + dy * dy);
+                    if (md < MOUSE_DIST) {{
+                        const force = (MOUSE_DIST - md) / MOUSE_DIST * 0.02;
+                        p.vx += (dx / md) * force;
+                        p.vy += (dy / md) * force;
+                    }}
+
+                    // Damping
+                    p.vx *= 0.99;
+                    p.vy *= 0.99;
+
+                    // Elongation detail — stretch when moving fast
+                    const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                    const stretch = Math.min(speed * 3, 3);
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // Wrap edges
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    // Draw particle (stretched ellipse)
+                    ctx.beginPath();
+                    ctx.ellipse(p.x, p.y, p.r + stretch, p.r, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = colors[p.ci] + p.opacity + ')';
+                    ctx.fill();
+
+                    // Draw connections
+                    for (let j = i + 1; j < particles.length; j++) {{
+                        const p2 = particles[j];
+                        const ddx = p.x - p2.x;
+                        const ddy = p.y - p2.y;
+                        const dd = Math.sqrt(ddx * ddx + ddy * ddy);
+                        if (dd < MAX_DIST) {{
+                            const lineOpacity = (1 - dd / MAX_DIST) * 0.08;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = colors[p.ci] + lineOpacity + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }}
+                    }}
+                }}
+                requestAnimationFrame(animate);
+            }}
+
+            window.addEventListener('resize', () => {{ resize(); initParticles(); }});
+            window.addEventListener('mousemove', (e) => {{ mouse.x = e.clientX; mouse.y = e.clientY; }});
+            window.addEventListener('mouseout', () => {{ mouse.x = -1000; mouse.y = -1000; }});
+
+            resize();
+            initParticles();
+            animate();
+        }})();
+        </script>
         """,
         unsafe_allow_html=True,
     )
@@ -931,11 +1148,37 @@ def _render_project_hub(enabled_model_keys: list[str]) -> None:
             margin-bottom: 3rem;
             border: 1px solid rgba(255,255,255,0.05);
             background: rgba(255,255,255,0.01);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease both;
+        }}
+        /* Angular accent line — Persona 5 central line */
+        .hub-hero-dark::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #0ea5e9, #10b981, #8b5cf6);
+            opacity: 0.5;
+        }}
+        /* Diagonal corner accent */
+        .hub-hero-dark::after {{
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3));
+            transform: rotate(-45deg);
+            transform-origin: top right;
         }}
         .hub-hero-dark .eyebrow {{
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.6rem;
-            color: #444;
+            color: rgba(16, 185, 129, 0.6);
             letter-spacing: 0.25em;
             text-transform: uppercase;
             margin-bottom: 1.5rem;
@@ -944,10 +1187,15 @@ def _render_project_hub(enabled_model_keys: list[str]) -> None:
             font-family: 'Cormorant Garamond', serif;
             font-size: clamp(2.5rem, 6vw, 4rem);
             font-weight: 300;
-            color: #f5f3ef;
             line-height: 1;
             letter-spacing: -0.02em;
             margin: 0;
+            background: linear-gradient(90deg, #0ea5e9, #10b981, #8b5cf6, #0ea5e9);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 8s ease infinite;
         }}
         .hub-hero-dark .subtitle {{
             font-family: 'Inter', sans-serif;
@@ -1104,7 +1352,7 @@ def _render_projects_page() -> None:
         .mb-section-label {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.6rem;
-            color: #444;
+            color: rgba(16, 185, 129, 0.5);
             letter-spacing: 0.2em;
             text-transform: uppercase;
             margin-bottom: 2rem;
@@ -1113,10 +1361,15 @@ def _render_projects_page() -> None:
             font-family: 'Cormorant Garamond', serif;
             font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 300;
-            color: #f5f3ef;
             line-height: 1;
             letter-spacing: -0.02em;
             margin: 0 0 1rem 0;
+            background: linear-gradient(90deg, #0ea5e9, #10b981, #8b5cf6, #0ea5e9);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 8s ease infinite;
         }
         .mb-subtitle {
             font-family: 'Inter', sans-serif;
@@ -1132,10 +1385,24 @@ def _render_projects_page() -> None:
             padding: 1.8rem;
             transition: all 0.3s ease;
             position: relative;
+            animation: fadeInUp 0.6s ease both;
         }
         .mb-card:hover {
             border-color: rgba(255,255,255,0.1);
             background: rgba(255,255,255,0.025);
+            transform: translateY(-2px);
+        }
+        .mb-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #0ea5e9, #10b981, #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .mb-card:hover::after {
+            opacity: 0.5;
         }
         .mb-card-num {
             font-family: 'IBM Plex Mono', monospace;
@@ -1497,7 +1764,7 @@ def _navigate_to_page(page_key: str) -> None:
 def _render_page_navigation() -> str:
     current_page = _current_portfolio_page()
 
-    # Minimal dark navigation styling
+    # Angular navigation styling — Persona kinetic energy
     st.markdown("""
     <style>
     .minimal-nav {
@@ -1505,11 +1772,12 @@ def _render_page_navigation() -> str:
         padding: 1.5rem 1.5rem 1rem 1.5rem;
         margin-bottom: 2rem;
         background: rgba(255, 255, 255, 0.01);
+        animation: fadeIn 0.6s ease both;
     }
     .minimal-nav-title {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 0.65rem;
-        color: #444;
+        color: rgba(16, 185, 129, 0.5);
         text-transform: uppercase;
         letter-spacing: 0.25em;
         margin-bottom: 1.2rem;
@@ -1532,16 +1800,20 @@ def _render_page_navigation() -> str:
         cursor: pointer;
         text-align: center;
         white-space: nowrap;
+        transform: skewX(-1deg);
+        animation: fadeInLeft 0.5s ease both;
     }
     .nav-item:hover {
-        border-color: rgba(255,255,255,0.15);
+        border-color: rgba(16, 185, 129, 0.3);
         color: #aaa;
         background: rgba(255,255,255,0.03);
+        transform: skewX(-1deg) translateX(2px);
     }
     .nav-item.active {
-        border-color: rgba(255,255,255,0.2);
+        border-color: transparent;
         color: #e8e6e3;
         background: rgba(255,255,255,0.04);
+        box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.3), 0 0 15px rgba(16, 185, 129, 0.08);
     }
     .page-summary {
         font-family: 'IBM Plex Mono', monospace;
