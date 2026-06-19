@@ -9,7 +9,7 @@ import { SummariesPage } from "@/pages/SummariesPage";
 export function AppRoutes() {
   return (
     <Routes>
-      <Route index element={<LandingPage />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="app" element={<AppShell />}>
         <Route index element={<MapPage />} />
         <Route path="cctvs" element={<CCTVPage />} />

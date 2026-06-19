@@ -6,10 +6,10 @@ import { getApiClient } from "@/api/client";
 import type { IntegrationsResponse } from "@/api/types";
 
 const navItems = [
-  { key: "/", label: "Map", icon: Map },
-  { key: "/cctvs", label: "CCTVs", icon: Camera },
-  { key: "/summaries", label: "Logs", icon: ClipboardList },
-  { key: "/notifications", label: "Alerts", icon: Bell },
+  { key: "/app", label: "Map", icon: Map },
+  { key: "/app/cctvs", label: "CCTVs", icon: Camera },
+  { key: "/app/summaries", label: "Logs", icon: ClipboardList },
+  { key: "/app/notifications", label: "Alerts", icon: Bell },
 ];
 
 export function AppShell() {
@@ -28,7 +28,7 @@ export function AppShell() {
     integrations?.nemotron?.status === "healthy" &&
     integrations?.locateanything?.status === "cached";
 
-  const isMapPage = location.pathname === "/";
+  const isMapPage = location.pathname === "/app";
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0B0D] text-[#E8E8E8] font-sans">
