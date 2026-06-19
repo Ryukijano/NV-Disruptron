@@ -38,6 +38,16 @@ export function AmbientBackground() {
       { x: 0.5, y: 0.5, r: 0.3, color: "rgba(168, 85, 247, 0.12)", phase: 4, speed: 0.0002 },
     ];
 
+    const particleCount = Math.min(60, Math.floor((width * height) / 25000));
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.5 + 0.2,
+    }));
+
     const draw = (time: number) => {
       ctx.fillStyle = "#0a0e1a";
       ctx.fillRect(0, 0, width, height);
@@ -73,6 +83,37 @@ export function AmbientBackground() {
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
+      }
+
+      // Particle network
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+      }
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.strokeStyle = `rgba(0, 212, 255, ${0.12 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (const p of particles) {
+        ctx.fillStyle = `rgba(0, 212, 255, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       animationId = requestAnimationFrame(draw);

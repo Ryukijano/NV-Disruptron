@@ -60,6 +60,27 @@ export function HeroSection() {
             View on GitHub
           </motion.a>
         </div>
+
+        {/* Floating stat badges */}
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-4">
+          {[
+            { label: "Local LLM", value: "Nemotron 4B" },
+            { label: "GPU memory", value: "128 GB" },
+            { label: "Live cameras", value: "200+" },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 + index * 0.15, duration: 0.5 }}
+              whileHover={{ y: -4 }}
+              className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-5 py-3 backdrop-blur-sm"
+            >
+              <div className="text-lg font-bold text-electric-cyan">{stat.value}</div>
+              <div className="text-xs uppercase tracking-wider text-text-secondary">{stat.label}</div>
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
 
       <motion.div
