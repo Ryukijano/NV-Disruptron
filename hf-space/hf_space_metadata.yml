@@ -1,4 +1,4 @@
-title: "Ryukijano's AI Portfolio + NV-Disruptron"
+title: "AI Research & Demos"
 emoji: "🚀"
 colorFrom: "green"
 colorTo: "blue"
@@ -7,4 +7,4 @@ python_version: "3.11"
 app_file: "start_space.py"
 pinned: false
 license: "mit"
-short_description: "Portfolio + NV-Disruptron London mobility AI demo"
+short_description: "AI research demos — medical imaging, quantum, robotics, and NV-Disruptron"
