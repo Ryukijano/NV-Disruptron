@@ -69,7 +69,7 @@ except ImportError:
     _PARAMETER_GOLF_AVAILABLE = False
     _render_parameter_golf_page = None
 
-st.set_page_config(page_title="AI Research & Demos", layout="wide")
+st.set_page_config(page_title="Gyanateet — AI Demos", layout="wide")
 
 MODEL_OPTION_LABELS = {
     "aiendo": "AI-Endo",
@@ -109,7 +109,7 @@ FALLBACK_EXPLAINABILITY_SPECS = {
 }
 
 
-SPACE_TITLE = "AI Research & Demos"
+SPACE_TITLE = "Gyanateet's AI Demos"
 FEATURED_PROJECT_TITLE = "DINO-Endo Surgery Workspace"
 MODEL_SLIDER_KEY = "workspace-model-slider"
 SELECTED_MODEL_STATE_KEY = "selected_model_key"
@@ -129,17 +129,17 @@ PORTFOLIO_PAGE_LABELS = {
     "parameter_golf": "Param Golf",
 }
 PORTFOLIO_PAGE_SUMMARIES = {
-    "intro": "Brief overview of the research areas and hosted demos.",
-    "home": "Landing page with featured projects and live demos.",
-    "workspace": "DINO-Endo Surgery workspace with model controls, explainability, and annotated video playback.",
-    "cosmos_sentinel": "Traffic safety pipeline with BADAS collision detection, Cosmos Reason narration, and Predict counterfactuals.",
-    "syndrome_net": "Quantum error correction with surface code circuits, RL decoders, and threshold exploration.",
-    "enterprise_dashboard": "Multi-camera dashboard with live feeds, webhooks, and analytics.",
-    "projects": "Project index for all live workspaces and upcoming pages.",
-    "technical": "Technical specifications and model details for all projects.",
-    "relp_sae": "Sparse autoencoder feature attribution explorer for GPT-2 predictions.",
-    "gemma_grook": "Vision-language-action model for robotic manipulation tasks.",
-    "parameter_golf": "Compressed language model demo — 16MB parameter budget text generation.",
+    "intro": "Quick intro to what's here and what I work on.",
+    "home": "Featured demos and what's running on this Space.",
+    "workspace": "Upload surgical videos, run phase recognition, and inspect attention maps.",
+    "cosmos_sentinel": "BADAS collision detection + Cosmos Reason narration demo.",
+    "syndrome_net": "RL-based decoders for quantum error correction codes.",
+    "enterprise_dashboard": "Multi-camera dashboard with live feeds and analytics.",
+    "projects": "Everything hosted on this Space, in one list.",
+    "technical": "Model sizes, hardware requirements, and stack details.",
+    "relp_sae": "SAE feature attribution explorer for GPT-2.",
+    "gemma_grook": "VLA model for robotic manipulation tasks.",
+    "parameter_golf": "16MB language model text generation demo.",
 }
 
 
@@ -171,8 +171,9 @@ HOSTED_PROJECTS = (
         icon="🏥",
         color="#0ea5e9",
         summary=(
-            "Upload single frames or full videos, swap between DINO-Endo, AI-Endo, and V-JEPA2, "
-            "and inspect optional explainability overlays inside one surgical phase-recognition workspace."
+            "Upload a frame or video and get surgical phase predictions with optional attention overlays. "
+            "Switch between DINO-Endo, AI-Endo, and V-JEPA2 encoders. This is my main research project — "
+            "self-supervised vision transformers for ESD phase recognition."
         ),
         highlights=(
             "Large video uploads with on-disk staging",
@@ -200,8 +201,8 @@ HOSTED_PROJECTS = (
         icon="🚗",
         color="#f59e0b",
         summary=(
-            "BADAS V-JEPA2 collision detection, Cosmos Reason 2 incident narration, and optional "
-            "Cosmos Predict 2.5 counterfactual video generation for traffic safety analysis."
+            "Traffic safety pipeline using BADAS for collision detection with Cosmos Reason 2 narration "
+            "and counterfactual video generation. Built for the NVIDIA Hack for Impact."
         ),
         highlights=(
             "BADAS predictive collision gating with gradient saliency",
@@ -229,8 +230,9 @@ HOSTED_PROJECTS = (
         icon="⚛️",
         color="#8b5cf6",
         summary=(
-            "Quantum Error Correction framework with surface code circuit generation, "
-            "RL-based decoders (PPO/SAC), and threshold exploration tools."
+            "Using reinforcement learning to decode quantum error correction codes. Surface code circuits "
+            "via Stim, RL agents (PPO/SAC) as syndrome decoders, and threshold sweeps. Integrates with "
+            "NVIDIA's Ising-Decoding framework."
         ),
         highlights=(
             "Stim circuit generation with noise models",
@@ -258,8 +260,9 @@ HOSTED_PROJECTS = (
         icon="🔬",
         color="#ec4899",
         summary=(
-            "High-fidelity causal attribution for Sparse Autoencoder features using Layer-wise Relevance Propagation. "
-            "Improves attribution faithfulness for mechanistic interpretability."
+            "Causal attribution for sparse autoencoder features using Layer-wise Relevance Propagation. "
+            "Built during my interpretability research — does LRP give more faithful explanations than "
+            "activation patching?"
         ),
         highlights=(
             "LRP relevance propagation to SAE features",
@@ -287,8 +290,8 @@ HOSTED_PROJECTS = (
         icon="🤖",
         color="#10b981",
         summary=(
-            "Vision-Language-Action policy built on LeRobot and GR00T. Integrates SigLIP vision, "
-            "Gemma 3 language, and ScaleDP diffusion action head for robotic manipulation."
+            "Vision-language-action model for robotic manipulation. SigLIP for vision, Gemma 3 for language, "
+            "ScaleDP diffusion head for action prediction. Built on LeRobot."
         ),
         highlights=(
             "SigLIP + Gemma 3 multimodal fusion",
@@ -316,8 +319,8 @@ HOSTED_PROJECTS = (
         icon="⚡",
         color="#ef4444",
         summary=(
-            "OpenAI Parameter Golf competition submission. Optimized 16MB language model "
-            "using INT6 quantization, U-Net architecture, and advanced training techniques."
+            "OpenAI's Parameter Golf challenge — fit a language model into 16MB. INT6 quantization, "
+            "U-Net transformer with skip connections, Muon optimizer. 15.5MB final, 26.5M params."
         ),
         highlights=(
             "INT6 + zstd-22 quantization (~15.5MB)",
@@ -985,26 +988,24 @@ def _render_project_hub(enabled_model_keys: list[str]) -> None:
         }}
         </style>
         <div class="hub-hero-dark">
-            <div class="eyebrow">ai research demos</div>
+            <div class="eyebrow">gyanateet dutta / leeds</div>
             <h1>{SPACE_TITLE}</h1>
             <p class="subtitle">
-                Applied AI research across medical imaging, quantum computing, robotics, and model optimization.
-                {FEATURED_PROJECT_TITLE} is the featured workspace.
+                I'm a Master's student at Leeds working on self-supervised vision for surgical phase recognition.
+                This Space hosts demos from my projects — ML for quantum error correction, vision-language-action
+                for robotics, and model compression.
             </p>
-            <div class="meta-line">{' &nbsp;&bull;&nbsp; '.join(enabled_labels)} &nbsp;&bull;&nbsp; {total_projects} projects &nbsp;&bull;&nbsp; {categories} categories</div>
+            <div class="meta-line">6 demos &nbsp;&bull;&nbsp; surgical vision &nbsp;&bull;&nbsp; QEC decoding &nbsp;&bull;&nbsp; robotics &nbsp;&bull;&nbsp; compression</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Minimal stats
+    # Simple tagline instead of stats grid
     st.markdown(
-        f"""
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 2rem 0;">
-            <div class="dark-stat"><div class="num">{total_projects}</div><div class="label">Projects</div></div>
-            <div class="dark-stat"><div class="num">{live_projects}</div><div class="label">Live</div></div>
-            <div class="dark-stat"><div class="num">{integrated_projects}</div><div class="label">Integrated</div></div>
-            <div class="dark-stat"><div class="num">{categories}</div><div class="label">Categories</div></div>
+        """
+        <div style="margin: 1.5rem 0; opacity: 0.6; font-size: 0.85rem;">
+            6 demos &nbsp;&bull;&nbsp; surgical vision, QEC decoding, robotics, compression
         </div>
         """,
         unsafe_allow_html=True,
@@ -1034,18 +1035,18 @@ def _render_project_hub(enabled_model_keys: list[str]) -> None:
         st.markdown(
             """
             <section class="hub-card">
-                <span class="hub-status">stack</span>
+                <span class="hub-status">about</span>
                 <div style="font-size:1.4rem; opacity:0.5; margin-bottom:0.5rem;">&#9881;</div>
-                <h3>Infrastructure</h3>
+                <h3>About</h3>
                 <p>
-                    GPU-optimized inference with model hot-swapping, live explainability,
-                    and a unified dark UI across all demos.
+                    I use ML as a tool across problems — surgical video understanding, quantum error correction
+                    decoding, and robotic perception. Currently interning in vision research at Leeds.
+                    Qiskit Advocate, ISBI 2026.
                 </p>
                 <ul>
-                    <li>GPU-optimized model switching</li>
-                    <li>Live encoder and decoder explainability</li>
-                    <li>Interactive video annotation tools</li>
-                    <li>Scalable single-GPU architecture</li>
+                    <li><a href="https://github.com/Ryukijano" target="_blank">GitHub</a></li>
+                    <li><a href="https://huggingface.co/Ryukijano" target="_blank">Hugging Face</a></li>
+                    <li><a href="https://ryukijano.github.io" target="_blank">Website</a></li>
                 </ul>
             </section>
             """,
@@ -1053,12 +1054,12 @@ def _render_project_hub(enabled_model_keys: list[str]) -> None:
         )
 
     action_cols = st.columns([1.2, 1.0, 1.0], gap="medium")
-    if action_cols[0].button("open workspace", key="open-featured-workspace", use_container_width=True):
+    if action_cols[0].button("Open Workspace", key="open-featured-workspace", use_container_width=True):
         _navigate_to_page("workspace")
-    if action_cols[1].button("explore projects", key="open-project-pages", use_container_width=True):
+    if action_cols[1].button("Browse Projects", key="open-project-pages", use_container_width=True):
         _navigate_to_page("projects")
     action_cols[2].download_button(
-        "export summary",
+        "Download Summary",
         json.dumps(
             {
                 "title": SPACE_TITLE,
@@ -1186,8 +1187,7 @@ def _render_projects_page() -> None:
         <div class="mb-section-label">projects</div>
         <h2 class="mb-title">Projects</h2>
         <p class="mb-subtitle">
-            AI research projects and live demos across medical imaging,
-            quantum computing, robotics, and model optimization.
+            ML demos across surgical vision, quantum error correction, robotics, and model compression.
         </p>
         <div class="mb-divider"></div>
         </div>
@@ -1233,10 +1233,10 @@ def _render_projects_page() -> None:
                     unsafe_allow_html=True,
                 )
                 if project.key == HOSTED_PROJECTS[0].key:
-                    if st.button("open workspace", key=f"open-page-{project.key}", use_container_width=True):
+                    if st.button("Open Workspace", key=f"open-page-{project.key}", use_container_width=True):
                         _navigate_to_page("workspace")
                 elif project.status == "Live now":
-                    label = "open " + project.title.split()[0].lower()
+                    label = "Open " + project.title.split()[0]
                     if st.button(label, key=f"open-live-{project.key}", use_container_width=True):
                         if project.key == "cosmos-sentinel":
                             _navigate_to_page("cosmos_sentinel")
@@ -1245,7 +1245,7 @@ def _render_projects_page() -> None:
                         elif project.key == "enterprise_dashboard":
                             _navigate_to_page("enterprise_dashboard")
                 else:
-                    st.button("view details", key=f"details-{project.key}", use_container_width=True)
+                    st.button("View Details", key=f"details-{project.key}", use_container_width=True)
             proj_idx += 1
         pattern_idx += 1
 
@@ -1372,7 +1372,7 @@ def _render_technical_page() -> None:
                     for metric, value in project.performance_metrics.items():
                         st.markdown(f"{metric}: {value}")
                 if project.model_link:
-                    if st.button("visit repo", key=f"visit-{project.key}"):
+                    if st.button("Visit Repo", key=f"visit-{project.key}"):
                         import webbrowser
                         webbrowser.open(project.model_link)
 

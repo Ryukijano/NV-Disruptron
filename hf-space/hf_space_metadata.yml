@@ -1,4 +1,4 @@
-title: "AI Research & Demos"
+title: "Gyanateet — AI Demos"
 emoji: "🚀"
 colorFrom: "green"
 colorTo: "blue"
@@ -7,4 +7,4 @@ python_version: "3.11"
 app_file: "start_space.py"
 pinned: false
 license: "mit"
-short_description: "AI research demos — medical imaging, quantum, robotics, and NV-Disruptron"
+short_description: "ML demos by Gyanateet Dutta — surgical vision, quantum error correction, robotics, and model compression"
