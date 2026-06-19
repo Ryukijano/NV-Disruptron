@@ -59,6 +59,15 @@ huggingface_hub.snapshot_download(model, local_files_only=False)
 print('Model download complete')
 "
 
+# Download LocateAnything-3B vision model at build time
+RUN python3 -c "
+import huggingface_hub
+model = 'nvidia/LocateAnything-3B'
+print('Downloading model', model)
+huggingface_hub.snapshot_download(model, local_files_only=False)
+print('Model download complete')
+"
+
 # Copy the rest of the application
 COPY --chown=user . /app
 

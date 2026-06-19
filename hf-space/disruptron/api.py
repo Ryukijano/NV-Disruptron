@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -12,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from disruptron.agent import AgentChatEngine, AgentTurn
+from disruptron.vision import LOCATEANYTHING_MODEL, get_vision_client
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +42,29 @@ class ChatResponse(BaseModel):
     tool_kinds: list[str]
 
 
+class VisionDetectRequest(BaseModel):
+    image_url: str = Field(..., min_length=1, max_length=2048)
+    labels: list[str] = Field(..., min_length=1)
+    confidence_threshold: float = Field(0.3, ge=0.0, le=1.0)
+
+
+class VisionDetectResponse(BaseModel):
+    detections: list[dict]
+    model: str
+    used_fallback: bool
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     app.state.client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
     app.state.agent = AgentChatEngine(model_url=VLLM_URL, model_name=VLLM_MODEL)
+    # Load vision client on startup so first request is fast
+    try:
+        vision_client = get_vision_client()
+        app.state.vision_client = vision_client
+    except Exception as exc:
+        logger.warning("vision client startup failed: %s", exc)
+        app.state.vision_client = None
     yield
     await app.state.client.aclose()
 
@@ -71,10 +92,47 @@ async def health() -> dict:
 
 @app.get("/api/v1/integrations")
 async def integrations() -> dict:
+    vision_client = getattr(app.state, "vision_client", None)
+    vision_ready = bool(vision_client and vision_client.is_available())
     return {
         "gpu": {"available": True, "model": VLLM_MODEL, "status": "ready"},
+        "nemotron": {"status": "healthy", "model": VLLM_MODEL},
+        "locateanything": {
+            "status": "cached" if vision_ready else "unavailable",
+            "model": LOCATEANYTHING_MODEL,
+            "available": vision_ready,
+        },
         "version": "0.2.0",
     }
+
+
+@app.post("/api/v1/vision/detect", response_model=VisionDetectResponse)
+async def vision_detect(req: VisionDetectRequest) -> VisionDetectResponse:
+    try:
+        from PIL import Image
+
+        vision_client = app.state.vision_client
+        if vision_client is None:
+            vision_client = get_vision_client()
+            app.state.vision_client = vision_client
+
+        resp = await app.state.client.get(req.image_url, timeout=20.0)
+        resp.raise_for_status()
+        image = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        detections = vision_client.detect(
+            image, req.labels, confidence_threshold=req.confidence_threshold
+        )
+        return VisionDetectResponse(
+            detections=[
+                {"label": d.label, "bbox": d.bbox, "confidence": d.confidence}
+                for d in detections
+            ],
+            model=LOCATEANYTHING_MODEL,
+            used_fallback=not vision_client.is_available(),
+        )
+    except Exception as exc:
+        logger.exception("vision detect failed")
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post("/api/v1/chat", response_model=ChatResponse)
