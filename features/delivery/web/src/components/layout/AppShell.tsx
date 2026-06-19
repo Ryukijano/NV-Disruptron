@@ -36,12 +36,15 @@ export function AppShell() {
 
       <header className="relative z-30 shrink-0 border-b border-white/[0.04] bg-[#0B0B0D]/90 backdrop-blur-md px-5 py-2.5 flex items-center justify-between">
         {/* Brand */}
-        <div className="flex items-center gap-3">
+        <a
+          href="https://ryukijano.github.io/NV-Disruptron/"
+          className="flex items-center gap-3 transition-opacity hover:opacity-80"
+        >
           <div className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
           <span className="text-[13px] font-semibold tracking-tight text-white/90">
             NV Disruptron
           </span>
-        </div>
+        </a>
 
         {/* Status */}
         <div className="hidden sm:flex items-center gap-2">
