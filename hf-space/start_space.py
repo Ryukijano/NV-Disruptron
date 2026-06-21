@@ -197,7 +197,7 @@ def main() -> None:
         try:
             processes.append(_start_vllm())
             print(f"Waiting for vLLM on port {VLLM_PORT}...", flush=True)
-            _wait_for_port_open(VLLM_PORT, timeout=300.0)
+            _wait_for_port_open(VLLM_PORT, timeout=60.0)
         except Exception as vllm_exc:
             print(f"vLLM failed to start ({vllm_exc}); continuing without LLM backend.", flush=True)
             if processes:
