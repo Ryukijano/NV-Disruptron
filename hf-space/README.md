@@ -1,3 +1,15 @@
+---
+title: "NV-Disruptron"
+emoji: "🚀"
+colorFrom: "green"
+colorTo: "blue"
+sdk: "docker"
+python_version: "3.11"
+app_file: "start_space.py"
+pinned: false
+license: "mit"
+---
+
 # NV-Disruptron Backend for Hugging Face Space
 
 This directory contains the backend that runs inside the existing Hugging Face Space `Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2`.
