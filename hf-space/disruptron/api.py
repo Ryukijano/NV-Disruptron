@@ -19,13 +19,13 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from disruptron.agent import AgentChatEngine, AgentTurn
-from disruptron.vision import LOCATEANYTHING_MODEL, get_vision_client
 
 logger = logging.getLogger(__name__)
 
 VLLM_URL = os.environ.get("VLLM_URL", "http://127.0.0.1:8000/v1")
 VLLM_MODEL = os.environ.get("VLLM_MODEL", "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16")
 TFL_APP_KEY = os.environ.get("TFL_APP_KEY", "")
+LOCATEANYTHING_MODEL = os.environ.get("LOCATEANYTHING_MODEL", "nvidia/LocateAnything-3B")
 GITHUB_PAGES_ORIGINS = [
     "https://ryukijano.github.io",
     "https://ryukijano.github.io/NV-Disruptron",
@@ -286,10 +286,14 @@ async def vision_detect(req: VisionDetectRequest) -> VisionDetectResponse:
     try:
         from PIL import Image
 
-        vision_client = app.state.vision_client
+        vision_client = getattr(app.state, "vision_client", None)
         if vision_client is None:
-            vision_client = get_vision_client()
-            app.state.vision_client = vision_client
+            try:
+                from disruptron.vision import get_vision_client
+                vision_client = get_vision_client()
+                app.state.vision_client = vision_client
+            except Exception:
+                raise HTTPException(status_code=503, detail="Vision model not available")
 
         resp = await app.state.client.get(req.image_url, timeout=20.0)
         resp.raise_for_status()
@@ -305,6 +309,8 @@ async def vision_detect(req: VisionDetectRequest) -> VisionDetectResponse:
             model=LOCATEANYTHING_MODEL,
             used_fallback=not vision_client.is_available(),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("vision detect failed")
         raise HTTPException(status_code=503, detail=str(exc)) from exc
