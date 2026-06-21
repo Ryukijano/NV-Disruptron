@@ -201,58 +201,26 @@ def main() -> None:
     _startup_lock = _acquire_startup_lock()
     _wait_for_port_release(PORT)
 
-    # Start proxy first so port 7860 responds immediately
-    proxy_proc = _start_proxy()
-    print(f"Waiting for proxy on port {PORT}...", flush=True)
+    # Start FastAPI directly on port 7860 — the web frontend only needs the API
+    cmd = [
+        "python3", "-m", "uvicorn",
+        "disruptron.api:app",
+        "--host", "0.0.0.0",
+        "--port", str(PORT),
+    ]
+    print(f"Starting FastAPI on port {PORT}: {' '.join(cmd)}", flush=True)
+    proc = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
+
+    # Wait for it to start
     _wait_for_port_open(PORT, timeout=30.0)
+    print(f"FastAPI is running on port {PORT}.", flush=True)
 
-    # Start FastAPI in background (non-blocking)
-    fastapi_proc = None
-    try:
-        fastapi_proc = _start_fastapi()
-        print(f"FastAPI starting on port {FASTAPI_PORT} (non-blocking)...", flush=True)
-    except Exception as exc:
-        print(f"FastAPI start failed: {exc}", flush=True)
-
-    # Start Streamlit in background (non-blocking)
-    streamlit_proc = None
-    try:
-        streamlit_proc = _start_streamlit()
-        print(f"Streamlit starting on port {STREAMLIT_PORT} (non-blocking)...", flush=True)
-    except Exception as exc:
-        print(f"Streamlit start failed: {exc}", flush=True)
-
-    # Optionally start vLLM if installed
-    vllm_proc = None
-    if _is_vllm_installed():
-        try:
-            vllm_proc = _start_vllm()
-            print(f"vLLM starting on port {VLLM_PORT} (non-blocking)...", flush=True)
-        except Exception as exc:
-            print(f"vLLM start failed: {exc}", flush=True)
-    else:
-        print("vLLM not installed; skipping LLM backend.", flush=True)
-
-    # Supervisor loop - only exit if the proxy dies
-    print("All services started. Holding main process.", flush=True)
-    children = [p for p in [proxy_proc, fastapi_proc, streamlit_proc, vllm_proc] if p is not None]
+    # Supervisor loop
     while True:
-        # Proxy is critical - if it dies, exit
-        if proxy_proc.poll() is not None:
-            print(f"Proxy exited with code {proxy_proc.returncode}; shutting down.", flush=True)
-            _terminate_children(children)
+        ret = proc.poll()
+        if ret is not None:
+            print(f"FastAPI exited with code {ret}; shutting down.", flush=True)
             sys.exit(1)
-        # Log non-critical exits but don't shut down
-        for name, proc in [("FastAPI", fastapi_proc), ("Streamlit", streamlit_proc), ("vLLM", vllm_proc)]:
-            if proc is not None and proc.poll() is not None:
-                print(f"{name} exited with code {proc.returncode} (non-critical, continuing).", flush=True)
-                # Mark as None so we don't keep checking
-                if name == "FastAPI":
-                    fastapi_proc = None
-                elif name == "Streamlit":
-                    streamlit_proc = None
-                elif name == "vLLM":
-                    vllm_proc = None
         time.sleep(2.0)
 
 
