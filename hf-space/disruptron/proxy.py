@@ -71,7 +71,7 @@ async def _proxy_request(request: Request, target_port: int, prefix: str) -> Res
 
 
 async def api_proxy(request: Request) -> Response:
-    return await _proxy_request(request, FASTAPI_PORT, "/api")
+    return await _proxy_request(request, FASTAPI_PORT, "")
 
 
 async def streamlit_proxy(request: Request) -> Response:
