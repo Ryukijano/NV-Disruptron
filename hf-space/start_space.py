@@ -118,6 +118,15 @@ def _wait_for_port_open(port: int, timeout: float = 120.0) -> None:
     raise RuntimeError(f"Port {port} did not open within {timeout:.0f}s")
 
 
+def _is_vllm_installed() -> bool:
+    """Check if vllm is importable."""
+    try:
+        import importlib.util
+        return importlib.util.find_spec("vllm") is not None
+    except Exception:
+        return False
+
+
 def _start_vllm() -> subprocess.Popen:
     cmd = [
         "python3", "-m", "vllm.entrypoints.openai.api_server",
@@ -194,14 +203,17 @@ def main() -> None:
 
     processes: list[subprocess.Popen] = []
     try:
-        try:
-            processes.append(_start_vllm())
-            print(f"Waiting for vLLM on port {VLLM_PORT}...", flush=True)
-            _wait_for_port_open(VLLM_PORT, timeout=60.0)
-        except Exception as vllm_exc:
-            print(f"vLLM failed to start ({vllm_exc}); continuing without LLM backend.", flush=True)
-            if processes:
-                processes.pop()
+        if _is_vllm_installed():
+            try:
+                processes.append(_start_vllm())
+                print(f"Waiting for vLLM on port {VLLM_PORT}...", flush=True)
+                _wait_for_port_open(VLLM_PORT, timeout=120.0)
+            except Exception as vllm_exc:
+                print(f"vLLM failed to start ({vllm_exc}); continuing without LLM backend.", flush=True)
+                if processes:
+                    processes.pop()
+        else:
+            print("vLLM not installed; skipping LLM backend.", flush=True)
 
         processes.append(_start_fastapi())
         print(f"Waiting for FastAPI on port {FASTAPI_PORT}...", flush=True)

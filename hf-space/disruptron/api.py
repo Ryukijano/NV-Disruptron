@@ -218,13 +218,8 @@ def _get_db() -> sqlite3.Connection:
 async def _lifespan(app: FastAPI):
     app.state.client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
     app.state.agent = AgentChatEngine(model_url=VLLM_URL, model_name=VLLM_MODEL)
-    # Load vision client on startup so first request is fast
-    try:
-        vision_client = get_vision_client()
-        app.state.vision_client = vision_client
-    except Exception as exc:
-        logger.warning("vision client startup failed: %s", exc)
-        app.state.vision_client = None
+    # Vision client loads lazily on first request to avoid slow startup
+    app.state.vision_client = None
     _init_web_db()
     yield
     await app.state.client.aclose()
