@@ -422,6 +422,15 @@ async def chat_stream(req: WebChatStreamRequest) -> StreamingResponse:
                     except Exception:
                         continue
             yield f"data: {json.dumps({'type': 'done', 'reply': reply.strip()})}\n\n"
+        except httpx.ConnectError:
+            logger.warning("vLLM not reachable; returning fallback response")
+            fallback = "NV-Disruptron is warming up the LLM backend. "
+            if _looks_like_london_query(req.text):
+                snapshot = await _london_snapshot()
+                lines = "; ".join(snapshot.get("lines", [])) or "All lines reported good service"
+                roads = "; ".join(snapshot.get("roads", [])) or "No major road disruptions"
+                fallback = f"Live London update:\nTube/Overground/DLR/Elizabeth: {lines}\nRoad disruptions: {roads}"
+            yield f"data: {json.dumps({'type': 'done', 'reply': fallback})}\n\n"
         except Exception as exc:
             logger.exception("stream failed")
             yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"

@@ -194,9 +194,14 @@ def main() -> None:
 
     processes: list[subprocess.Popen] = []
     try:
-        processes.append(_start_vllm())
-        print(f"Waiting for vLLM on port {VLLM_PORT}...", flush=True)
-        _wait_for_port_open(VLLM_PORT, timeout=300.0)
+        try:
+            processes.append(_start_vllm())
+            print(f"Waiting for vLLM on port {VLLM_PORT}...", flush=True)
+            _wait_for_port_open(VLLM_PORT, timeout=300.0)
+        except Exception as vllm_exc:
+            print(f"vLLM failed to start ({vllm_exc}); continuing without LLM backend.", flush=True)
+            if processes:
+                processes.pop()
 
         processes.append(_start_fastapi())
         print(f"Waiting for FastAPI on port {FASTAPI_PORT}...", flush=True)

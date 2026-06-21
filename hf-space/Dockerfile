@@ -50,23 +50,8 @@ RUN python3 -m pip install --upgrade pip && \
 COPY --chown=user disruptron/requirements.txt /app/disruptron/requirements.txt
 RUN python3 -m pip install -r /app/disruptron/requirements.txt
 
-# Download the small LLM used by NV-Disruptron at build time
-RUN python3 -c "
-import huggingface_hub, os
-model = os.environ['VLLM_MODEL']
-print('Downloading model', model)
-huggingface_hub.snapshot_download(model, local_files_only=False)
-print('Model download complete')
-"
-
-# Download LocateAnything-3B vision model at build time
-RUN python3 -c "
-import huggingface_hub
-model = 'nvidia/LocateAnything-3B'
-print('Downloading model', model)
-huggingface_hub.snapshot_download(model, local_files_only=False)
-print('Model download complete')
-"
+# Models are downloaded at runtime by start_space.py / vLLM to avoid
+# multi-GB downloads during Docker build (which can time out on HF Space).
 
 # Copy the rest of the application
 COPY --chown=user . /app
