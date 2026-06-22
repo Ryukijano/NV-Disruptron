@@ -15,7 +15,7 @@ const links = [
   {
     title: "Hugging Face Space",
     description: "Try the live backend demo running Nemotron-3-Nano-4B.",
-    href: "https://huggingface.co/spaces/Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2",
+    href: "https://huggingface.co/spaces/Ryukijano/gyanateet-portfolio",
     icon: HuggingFaceIcon,
     glow: "amber" as const,
   },

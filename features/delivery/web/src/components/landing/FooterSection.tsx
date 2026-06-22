@@ -24,7 +24,7 @@ export function FooterSection() {
               GitHub
             </a>
             <a
-              href="https://huggingface.co/spaces/Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2"
+              href="https://huggingface.co/spaces/Ryukijano/gyanateet-portfolio"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-electric-cyan"

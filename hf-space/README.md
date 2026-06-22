@@ -1,5 +1,5 @@
 ---
-title: "NV-Disruptron"
+title: "Gyanateet's Portfolio"
 emoji: "🚀"
 colorFrom: "green"
 colorTo: "blue"
@@ -10,11 +10,11 @@ pinned: false
 license: "mit"
 ---
 
-# NV-Disruptron Backend for Hugging Face Space
+# Gyanateet's Portfolio — Hugging Face Space Backend
 
-This directory contains the backend that runs inside the existing Hugging Face Space `Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2`.
+This directory contains the backend that runs inside the Hugging Face Space `Ryukijano/gyanateet-portfolio`.
 
-It adds a lightweight FastAPI backend (`/api/*`) alongside the existing Streamlit portfolio (`/*`), all served through port `7860` via a reverse proxy.
+It runs a FastAPI backend (`/api/*`) on port `7860`, serving chat, TfL live data, and health endpoints.
 
 ## Services
 

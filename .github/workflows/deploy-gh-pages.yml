@@ -39,7 +39,7 @@ jobs:
         working-directory: features/delivery/web
         run: npm run build
         env:
-          VITE_API_BASE_URL: https://ryukijano-catcon-one-shot-controlnet-sd-1-5-b2.hf.space/api
+          VITE_API_BASE_URL: https://ryukijano-gyanateet-portfolio.hf.space/api
           CI: false
 
       - name: Add SPA fallback and disable Jekyll
