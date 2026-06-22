@@ -67,6 +67,17 @@ class WebChatStreamRequest(BaseModel):
     image_path: str | None = Field(None, max_length=512)
 
 
+class WebSessionCreateRequest(BaseModel):
+    session_id: str | None = Field(None, max_length=128)
+    user_id: str | None = Field(None, max_length=128)
+
+
+class ChatMessageItem(BaseModel):
+    id: str
+    role: str
+    text: str
+
+
 class WebChatResponse(BaseModel):
     reply: str
 
@@ -471,8 +482,18 @@ async def tts(req: TtsRequest) -> StreamingResponse:
     )
 
 
+@app.post("/api/v1/web/session", response_model=WebSessionBootstrapResponse)
+async def web_session_create(req: WebSessionCreateRequest) -> WebSessionBootstrapResponse:
+    session_id = req.session_id or f"web-{uuid.uuid4().hex[:12]}"
+    return await _bootstrap_session(session_id)
+
+
 @app.get("/api/v1/web/bootstrap", response_model=WebSessionBootstrapResponse)
 async def web_bootstrap(session_id: str = Query(..., min_length=4)) -> WebSessionBootstrapResponse:
+    return await _bootstrap_session(session_id)
+
+
+async def _bootstrap_session(session_id: str) -> WebSessionBootstrapResponse:
     conn = _get_db()
     cur = conn.cursor()
     cur.execute(
@@ -500,6 +521,11 @@ async def web_bootstrap(session_id: str = Query(..., min_length=4)) -> WebSessio
         notifications=notifications,
         subscriptions=subscriptions,
     )
+
+
+@app.get("/api/v1/web/messages", response_model=list[ChatMessageItem])
+async def web_messages(session_id: str = Query(..., min_length=4), limit: int = Query(100, ge=1, le=500)) -> list[ChatMessageItem]:
+    return []
 
 
 @app.get("/api/v1/web/subscriptions", response_model=WebSubscriptionResponse)
