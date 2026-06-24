@@ -200,7 +200,7 @@ Edit `features/agent/workspace/USER.md` with your EV/commute areas (kept private
 
 **Hugging Face Space Backend** — A lightweight demo backend runs on the existing A10G Space using NVIDIA Nemotron-3-Nano-4B, fully local inference:
 
-- https://huggingface.co/spaces/Ryukijano/gyanateet-portfolio
+- https://huggingface.co/spaces/Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2
 - API endpoint: `/api/*`
 
 The HF Space backend is a smaller community demo; the full DGX Spark stack (LocateAnything-3B, RAPIDS, cuOpt, Riva, Cosmos Reason 2) remains on the local DGX Spark.

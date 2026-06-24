@@ -32,6 +32,6 @@ jobs:
         run: |
           hf upload --repo-type space \
             --commit-message "Sync from GitHub: ${GITHUB_SHA::7}" \
-            Ryukijano/gyanateet-portfolio \
+            Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2 \
             hf-space/ \
             /

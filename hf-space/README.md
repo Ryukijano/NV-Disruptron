@@ -12,7 +12,7 @@ license: "mit"
 
 # Gyanateet's Portfolio — Hugging Face Space Backend
 
-This directory contains the backend that runs inside the Hugging Face Space `Ryukijano/gyanateet-portfolio`.
+This directory contains the backend that runs inside the Hugging Face Space `Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2`.
 
 It runs a FastAPI backend (`/api/*`) on port `7860`, serving chat, TfL live data, and health endpoints.
 

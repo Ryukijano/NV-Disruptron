@@ -211,7 +211,7 @@ HOSTED_PROJECTS = (
             "JSON payload export with full provenance",
         ),
         tags=("Autonomous driving", "Video understanding", "Generative AI", "Safety"),
-        model_link="https://huggingface.co/spaces/Ryukijano/gyanateet-portfolio",
+        model_link="https://huggingface.co/spaces/Ryukijano/CatCon-One-Shot-Controlnet-SD-1-5-b2",
         model_size="~4GB (V-JEPA2 + BADAS + Cosmos models)",
         architecture="V-JEPA2 Vision Encoder + BADAS + Cosmos Reason 2",
         framework="PyTorch + NVIDIA Cosmos",
